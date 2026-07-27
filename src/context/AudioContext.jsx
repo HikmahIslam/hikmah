@@ -81,11 +81,7 @@ export const AudioProvider = ({ children }) => {
 
     const onError = (e) => {
       console.error("Audio element error event:", e);
-      if (audioLanguageRef.current === 'ml' && currentSurahRef.current && currentAyahIndexRef.current !== -1) {
-        speakTranslation(currentSurahRef.current.ayahs[currentAyahIndexRef.current], 'ml-IN');
-      } else {
-        setIsPlaying(false);
-      }
+      setIsPlaying(false);
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -238,32 +234,32 @@ export const AudioProvider = ({ children }) => {
 
     if (lang === 'ml') {
       // Authentic Human Male Studio Audio Recitation (Cheriamundam Abdul Hameed & Parappoor Kunhi Mohammed)
-      // Primary CDN: Islamic Network ml.abdulhameed edition with full CORS support
-      const mlAudioUrl = `https://cdn.islamic.network/quran/audio/128/ml.abdulhameed/${ayah.number}.mp3`;
-      
       const surahPad = String(surah.number).padStart(3, '0');
       const ayahPad = String(ayah.numberInSurah).padStart(3, '0');
-      const fallbackUrl = `https://everyayah.com/data/Malayalam_Abdul_Hameed_and_Kunhi_128kbps/${surahPad}${ayahPad}.mp3`;
+      
+      // Primary CDN: QuranicAudio / EveryAyah mirror (Malayalam_Abdul_Hameed_and_Kunhi_64kbps)
+      const primaryUrl = `https://mirrors.quranicaudio.com/everyayah/Malayalam_Abdul_Hameed_and_Kunhi_64kbps/${surahPad}${ayahPad}.mp3`;
+      const fallbackUrl = `https://everyayah.com/data/Malayalam_Abdul_Hameed_and_Kunhi_64kbps/${surahPad}${ayahPad}.mp3`;
 
       if (audioRef.current) {
         try {
-          audioRef.current.src = mlAudioUrl;
+          audioRef.current.src = primaryUrl;
           audioRef.current.load();
           audioRef.current.play()
             .then(() => setIsPlaying(true))
             .catch(() => {
-              // Try secondary EveryAyah studio MP3
+              // Try secondary direct EveryAyah server
               audioRef.current.src = fallbackUrl;
               audioRef.current.load();
               audioRef.current.play()
                 .then(() => setIsPlaying(true))
-                .catch(() => speakTranslation(ayah, 'ml-IN'));
+                .catch(() => setIsPlaying(false));
             });
         } catch (e) {
-          speakTranslation(ayah, 'ml-IN');
+          setIsPlaying(false);
         }
       } else {
-        speakTranslation(ayah, 'ml-IN');
+        setIsPlaying(false);
       }
       return;
     }
