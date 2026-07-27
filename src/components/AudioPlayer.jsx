@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, ChevronUp, ChevronDown, X, Loader2, AlertCircle } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 
@@ -14,6 +14,9 @@ const RECITERS = [
 export const AudioPlayer = () => {
   const {
     isPlaying,
+    isTTSLoading,
+    ttsLoadingMessage,
+    ttsError,
     currentSurah,
     currentAyahIndex,
     currentAyah,
@@ -181,7 +184,7 @@ export const AudioPlayer = () => {
           <div className="flex items-center gap-3 sm:gap-4 mb-1.5 sm:mb-2">
             <button
               onClick={prevAyah}
-              disabled={currentAyahIndex === 0}
+              disabled={currentAyahIndex === 0 || isTTSLoading}
               className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Previous Ayah"
               aria-label="Previous Ayah"
@@ -189,7 +192,14 @@ export const AudioPlayer = () => {
               <SkipBack className="w-5 h-5 fill-current" />
             </button>
             
-            {isPlaying ? (
+            {isTTSLoading ? (
+              <div
+                className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-brand-emerald-500/20 text-brand-emerald-600 dark:text-brand-emerald-400 min-h-[44px] min-w-[44px]"
+                title="Generating neural audio..."
+              >
+                <Loader2 className="w-6 h-6 animate-spin text-brand-emerald-600 dark:text-brand-emerald-400" />
+              </div>
+            ) : isPlaying ? (
               <button
                 onClick={pauseAudio}
                 className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-brand-emerald-500 text-white shadow-lg shadow-brand-emerald-500/20 hover:bg-brand-emerald-600 hover:scale-105 active:scale-95 transition-all min-h-[44px] min-w-[44px]"
@@ -211,7 +221,7 @@ export const AudioPlayer = () => {
 
             <button
               onClick={nextAyah}
-              disabled={currentAyahIndex === currentSurah.ayahs.length - 1}
+              disabled={currentAyahIndex === currentSurah.ayahs.length - 1 || isTTSLoading}
               className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Next Ayah"
               aria-label="Next Ayah"
@@ -219,6 +229,21 @@ export const AudioPlayer = () => {
               <SkipForward className="w-5 h-5 fill-current" />
             </button>
           </div>
+
+          {/* Loading status or Error message */}
+          {isTTSLoading && ttsLoadingMessage && (
+            <div className="flex items-center gap-1.5 text-[11px] text-brand-emerald-600 dark:text-brand-emerald-400 font-medium mb-1 animate-pulse">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>{ttsLoadingMessage}</span>
+            </div>
+          )}
+
+          {ttsError && (
+            <div className="flex items-center gap-1.5 text-[11px] text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-1 rounded-md font-medium mb-1">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{ttsError}</span>
+            </div>
+          )}
 
           {/* Seek Slider */}
           <div className="flex items-center gap-2.5 w-full text-[11px] font-mono text-slate-400">
