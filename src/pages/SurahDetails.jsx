@@ -170,6 +170,40 @@ export const SurahDetails = () => {
             </button>
           </div>
 
+          {/* Translation Language Selector Pill */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+            <button
+              onClick={() => updateSetting('defaultLanguage', 'en')}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                settings.defaultLanguage === 'en'
+                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => updateSetting('defaultLanguage', 'ml')}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                settings.defaultLanguage === 'ml'
+                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              മലയാളം
+            </button>
+            <button
+              onClick={() => updateSetting('defaultLanguage', 'both')}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                settings.defaultLanguage === 'both'
+                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Both
+            </button>
+          </div>
+
           {/* Audio Recitation button */}
           <button
             onClick={handlePlaySurah}

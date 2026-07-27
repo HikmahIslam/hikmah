@@ -125,26 +125,36 @@ export const Settings = () => {
                 <Globe className="w-5 h-5 text-brand-emerald-600 dark:text-brand-emerald-400" />
                 <label className="text-sm font-bold">Default Translation</label>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => updateSetting('defaultLanguage', 'en')}
-                  className={`py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  className={`py-2.5 px-2 rounded-xl border text-xs font-semibold transition-all ${
                     settings.defaultLanguage === 'en'
-                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400 font-semibold'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400 font-bold shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  English (Sahih Intl)
+                  English
                 </button>
                 <button
                   onClick={() => updateSetting('defaultLanguage', 'ml')}
-                  className={`py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  className={`py-2.5 px-2 rounded-xl border text-xs font-semibold transition-all ${
                     settings.defaultLanguage === 'ml'
-                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400 font-semibold'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400 font-bold shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  Malayalam (Abdul Hameed)
+                  മലയാളം
+                </button>
+                <button
+                  onClick={() => updateSetting('defaultLanguage', 'both')}
+                  className={`py-2.5 px-2 rounded-xl border text-xs font-semibold transition-all ${
+                    settings.defaultLanguage === 'both'
+                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400 font-bold shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  Both
                 </button>
               </div>
             </div>
