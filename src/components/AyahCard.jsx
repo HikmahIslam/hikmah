@@ -5,7 +5,7 @@ import { useBookmarks } from '../context/BookmarksContext';
 import { useSettings } from '../context/SettingsContext';
 
 export const AyahCard = ({ ayah, surah }) => {
-  const { playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah } = useAudio();
+  const { playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah, audioLanguage } = useAudio();
   const { toggleBookmark, isBookmarked } = useBookmarks();
   const { settings } = useSettings();
   const [isCopied, setIsCopied] = useState(false);
@@ -16,6 +16,10 @@ export const AyahCard = ({ ayah, surah }) => {
     isPlaying && 
     currentSurah?.number === surah.number && 
     currentAyah?.numberInSurah === numberInSurah;
+
+  const isArabicActive = isCurrentlyPlaying && audioLanguage === 'ar';
+  const isEnglishActive = isCurrentlyPlaying && audioLanguage === 'en';
+  const isMalayalamActive = isCurrentlyPlaying && audioLanguage === 'ml';
 
   const isSaved = isBookmarked(surah.number, numberInSurah);
 
@@ -75,17 +79,25 @@ export const AyahCard = ({ ayah, surah }) => {
       id={`ayah-${numberInSurah}`}
       className={`bg-white dark:bg-slate-900 border rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 transition-all duration-300 ${
         isCurrentlyPlaying
-          ? 'border-brand-emerald-400 dark:border-brand-emerald-600 bg-brand-emerald-50/10 dark:bg-brand-emerald-950/10 ring-2 ring-brand-emerald-500/10'
+          ? 'border-brand-emerald-400 dark:border-brand-emerald-600 bg-brand-emerald-50/10 dark:bg-brand-emerald-950/10 ring-2 ring-brand-emerald-500/20 shadow-md'
           : 'border-slate-200/50 dark:border-slate-800/80 hover:border-slate-350 dark:hover:border-slate-700'
       }`}
     >
       {/* Top action row */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 pb-3 mb-4 gap-2">
-        <span className="font-bold text-xs text-slate-500 dark:text-slate-450 bg-slate-50 dark:bg-slate-950 px-2.5 py-1 rounded-full font-mono flex-shrink-0">
-          {surah.number}:{numberInSurah}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-xs text-slate-500 dark:text-slate-450 bg-slate-50 dark:bg-slate-950 px-2.5 py-1 rounded-full font-mono flex-shrink-0">
+            {surah.number}:{numberInSurah}
+          </span>
+          {isCurrentlyPlaying && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-emerald-500 text-white animate-pulse flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+              {audioLanguage === 'ar' ? 'Playing Recitation' : audioLanguage === 'en' ? 'Playing English' : 'Playing Malayalam'}
+            </span>
+          )}
+        </div>
         
-        {/* Action Buttons - wrap on very small screens */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
           <button
             onClick={handlePlayToggle}
@@ -130,7 +142,7 @@ export const AyahCard = ({ ayah, surah }) => {
       </div>
 
       {/* Arabic text */}
-      <div className="text-right mb-4 sm:mb-5">
+      <div className={`text-right mb-4 sm:mb-5 p-2 rounded-2xl transition-all duration-300 ${isArabicActive ? 'bg-brand-emerald-500/15 ring-2 ring-brand-emerald-500/40 font-bold' : ''}`}>
         <p
           className="arabic-text text-slate-900 dark:text-white leading-loose font-normal antialiased break-words"
           style={{ fontSize: `${settings.arabicFontSize}px` }}
@@ -143,10 +155,21 @@ export const AyahCard = ({ ayah, surah }) => {
       {/* Translations */}
       <div className="space-y-3 border-l-2 border-brand-emerald-500/25 pl-3.5 sm:pl-4 py-1">
         {(!settings.defaultLanguage || settings.defaultLanguage === 'en' || settings.defaultLanguage === 'both') && (
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase block">English</span>
+          <div
+            id={`translation-en-${numberInSurah}`}
+            className={`space-y-1 p-2.5 rounded-2xl transition-all duration-300 ${
+              isEnglishActive
+                ? 'bg-brand-emerald-50 dark:bg-brand-emerald-950/60 text-brand-emerald-900 dark:text-brand-emerald-200 border-l-4 border-brand-emerald-500 ring-2 ring-brand-emerald-500/30 shadow-sm font-medium'
+                : ''
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-[9px] font-bold tracking-wider uppercase block ${isEnglishActive ? 'text-brand-emerald-600 dark:text-brand-emerald-400' : 'text-slate-400'}`}>
+                English {isEnglishActive && '• Reading Line 🔊'}
+              </span>
+            </div>
             <p
-              className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans break-words"
+              className={`leading-relaxed font-sans break-words ${isEnglishActive ? 'text-brand-emerald-950 dark:text-brand-emerald-100 font-semibold' : 'text-slate-700 dark:text-slate-350'}`}
               style={{ fontSize: `${settings.translationFontSize}px` }}
             >
               {enTranslation}
@@ -155,10 +178,21 @@ export const AyahCard = ({ ayah, surah }) => {
         )}
 
         {(settings.defaultLanguage === 'ml' || settings.defaultLanguage === 'both') && mlTranslation && (
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase block">Malayalam</span>
+          <div
+            id={`translation-ml-${numberInSurah}`}
+            className={`space-y-1 p-2.5 rounded-2xl transition-all duration-300 ${
+              isMalayalamActive
+                ? 'bg-brand-emerald-50 dark:bg-brand-emerald-950/60 text-brand-emerald-900 dark:text-brand-emerald-200 border-l-4 border-brand-emerald-500 ring-2 ring-brand-emerald-500/30 shadow-sm font-medium'
+                : ''
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`text-[9px] font-bold tracking-wider uppercase block ${isMalayalamActive ? 'text-brand-emerald-600 dark:text-brand-emerald-400' : 'text-slate-400'}`}>
+                Malayalam {isMalayalamActive && '• Reading Line 🔊'}
+              </span>
+            </div>
             <p
-              className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans break-words"
+              className={`leading-relaxed font-sans break-words ${isMalayalamActive ? 'text-brand-emerald-950 dark:text-brand-emerald-100 font-semibold' : 'text-slate-700 dark:text-slate-350'}`}
               style={{ fontSize: `${settings.translationFontSize}px` }}
             >
               {mlTranslation}

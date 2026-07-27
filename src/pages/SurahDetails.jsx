@@ -429,23 +429,58 @@ export const SurahDetails = () => {
               Surah Verses & Translations
             </h3>
             <div className="space-y-4">
-              {surah.ayahs.map((ayah) => (
-                <div key={ayah.numberInSurah} className="border-l-2 border-brand-emerald-500/25 pl-4 py-1.5 space-y-1">
-                  <span className="text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400 font-mono">
-                    {surah.number}:{ayah.numberInSurah}
-                  </span>
-                  {(!settings.defaultLanguage || settings.defaultLanguage === 'en' || settings.defaultLanguage === 'both') && (
-                    <p className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans" style={{ fontSize: `${settings.translationFontSize}px` }}>
-                      {ayah.enTranslation}
-                    </p>
-                  )}
-                  {(settings.defaultLanguage === 'ml' || settings.defaultLanguage === 'both') && ayah.mlTranslation && (
-                    <p className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans" style={{ fontSize: `${settings.translationFontSize}px` }}>
-                      {ayah.mlTranslation}
-                    </p>
-                  )}
-                </div>
-              ))}
+              {surah.ayahs.map((ayah) => {
+                const isEnActive = isPlaying && currentSurah?.number === surah.number && currentAyah?.numberInSurah === ayah.numberInSurah && audioLanguage === 'en';
+                const isMlActive = isPlaying && currentSurah?.number === surah.number && currentAyah?.numberInSurah === ayah.numberInSurah && audioLanguage === 'ml';
+
+                return (
+                  <div
+                    key={ayah.numberInSurah}
+                    className={`pl-4 py-2 border-l-4 transition-all duration-300 rounded-r-2xl ${
+                      isEnActive || isMlActive
+                        ? 'border-brand-emerald-500 bg-brand-emerald-50/70 dark:bg-brand-emerald-950/50 shadow-sm ring-1 ring-brand-emerald-500/20'
+                        : 'border-brand-emerald-500/20'
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400 font-mono flex items-center gap-2">
+                      {surah.number}:{ayah.numberInSurah}
+                      {(isEnActive || isMlActive) && (
+                        <span className="text-[10px] bg-brand-emerald-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                          🔊 Reading Line
+                        </span>
+                      )}
+                    </span>
+
+                    {(!settings.defaultLanguage || settings.defaultLanguage === 'en' || settings.defaultLanguage === 'both') && (
+                      <p
+                        id={`translation-en-${ayah.numberInSurah}`}
+                        className={`leading-relaxed font-sans mt-1 p-1.5 rounded-xl transition-all ${
+                          isEnActive
+                            ? 'text-brand-emerald-950 dark:text-brand-emerald-100 font-semibold bg-brand-emerald-100/50 dark:bg-brand-emerald-900/40'
+                            : 'text-slate-700 dark:text-slate-350'
+                        }`}
+                        style={{ fontSize: `${settings.translationFontSize}px` }}
+                      >
+                        {ayah.enTranslation}
+                      </p>
+                    )}
+
+                    {(settings.defaultLanguage === 'ml' || settings.defaultLanguage === 'both') && ayah.mlTranslation && (
+                      <p
+                        id={`translation-ml-${ayah.numberInSurah}`}
+                        className={`leading-relaxed font-sans mt-1 p-1.5 rounded-xl transition-all ${
+                          isMlActive
+                            ? 'text-brand-emerald-950 dark:text-brand-emerald-100 font-semibold bg-brand-emerald-100/50 dark:bg-brand-emerald-900/40'
+                            : 'text-slate-700 dark:text-slate-350'
+                        }`}
+                        style={{ fontSize: `${settings.translationFontSize}px` }}
+                      >
+                        {ayah.mlTranslation}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

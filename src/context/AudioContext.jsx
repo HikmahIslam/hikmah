@@ -308,8 +308,20 @@ export const AudioProvider = ({ children }) => {
     currentSurahRef.current     = surah;
     currentAyahIndexRef.current = index;
 
-    const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Target-scroll smoothly to translation or ayah element using block: 'nearest'
+    // Prevents jarring jumps to the top of the Arabic text when translation audio plays
+    setTimeout(() => {
+      let targetEl = null;
+      if (lang === 'en' || lang === 'ml') {
+        targetEl = document.getElementById(`translation-${lang}-${ayah.numberInSurah}`);
+      }
+      if (!targetEl) {
+        targetEl = document.getElementById(`ayah-${ayah.numberInSurah}`);
+      }
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 60);
 
     // Malayalam & English → Pure Neural TTS Pipeline (ZERO SpeechSynthesis)
     if (lang === 'ml' || lang === 'en') {
