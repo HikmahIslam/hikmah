@@ -3,10 +3,32 @@ import { useSettings } from './SettingsContext';
 
 const AudioContext = createContext();
 
+// ─── Google Translate TTS helpers (server-side synthesis, different from browser TTS) ───
+const ML_TTS_CHUNK_MAX = 185;
+
+const buildTranslateTTSUrl = (text, lang = 'ml') =>
+  `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(text)}&ttsspeed=0.75`;
+
+const splitAtWordBoundary = (text, maxLen) => {
+  if (text.length <= maxLen) return [text];
+  const chunks = [];
+  let remaining = text.trim();
+  while (remaining.length > maxLen) {
+    let cut = remaining.lastIndexOf(' ', maxLen);
+    if (cut <= 0) cut = maxLen;
+    chunks.push(remaining.slice(0, cut).trim());
+    remaining = remaining.slice(cut).trim();
+  }
+  if (remaining) chunks.push(remaining);
+  return chunks;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const AudioProvider = ({ children }) => {
   const { settings } = useSettings();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSurah, setCurrentSurah] = useState(null); // { number, name, englishName, ayahs }
+  const [currentSurah, setCurrentSurah] = useState(null);
   const [currentAyahIndex, setCurrentAyahIndex] = useState(-1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -15,77 +37,66 @@ export const AudioProvider = ({ children }) => {
   const [audioLanguage, setAudioLanguage] = useState('ar'); // 'ar' | 'en' | 'ml'
 
   const audioRef = useRef(null);
-  const speechTrackerRef = useRef({ cancelled: false, currentUtterance: null });
-  
-  // Refs for tracking state inside audio event listeners without closure staleness
-  const currentSurahRef = useRef(currentSurah);
-  const currentAyahIndexRef = useRef(currentAyahIndex);
-  const audioLanguageRef = useRef(audioLanguage);
+  const speechTrackerRef = useRef({ cancelled: false });
+  const mlChunkQueueRef = useRef([]); // remaining chunks for current ayah (Malayalam)
 
-  useEffect(() => {
-    currentSurahRef.current = currentSurah;
-  }, [currentSurah]);
+  // Refs for closure-safe access inside event listeners
+  const currentSurahRef = useRef(null);
+  const currentAyahIndexRef = useRef(-1);
+  const audioLanguageRef = useRef('ar');
 
-  useEffect(() => {
-    currentAyahIndexRef.current = currentAyahIndex;
-  }, [currentAyahIndex]);
+  useEffect(() => { currentSurahRef.current = currentSurah; }, [currentSurah]);
+  useEffect(() => { currentAyahIndexRef.current = currentAyahIndex; }, [currentAyahIndex]);
+  useEffect(() => { audioLanguageRef.current = audioLanguage; }, [audioLanguage]);
 
-  useEffect(() => {
-    audioLanguageRef.current = audioLanguage;
-  }, [audioLanguage]);
-
-  // Pre-fetch system voices for SpeechSynthesis fallback
+  // Pre-fetch Web Speech voices (used for English fallback)
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
-      const handleVoicesChanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
-      return () => {
-        if (window.speechSynthesis.onvoiceschanged === handleVoicesChanged) {
-          window.speechSynthesis.onvoiceschanged = null;
-        }
-      };
+      const onChanged = () => window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = onChanged;
+      return () => { window.speechSynthesis.onvoiceschanged = null; };
     }
   }, []);
 
-  // Stop any active speech (Web Speech API + ResponsiveVoice)
+  // Stop Web Speech API
   const stopSpeech = () => {
     speechTrackerRef.current.cancelled = true;
-    if (typeof window !== 'undefined') {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      if (window.responsiveVoice && window.responsiveVoice.isPlaying()) {
-        window.responsiveVoice.cancel();
-      }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
   };
 
-  // Initialize Audio object for Arabic & Malayalam studio recitations
+  // ─── Audio element setup ───
   useEffect(() => {
     const audio = new Audio();
     audio.volume = volume;
     audioRef.current = audio;
 
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const onLoadedMetadata = () => {
-      setDuration(audio.duration);
-    };
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onLoadedMetadata = () => setDuration(audio.duration);
 
     const onEnded = () => {
-      // Audio MP3 ended (Arabic or Malayalam studio audio)
-      if (audioLanguageRef.current === 'ar' || audioLanguageRef.current === 'ml') {
+      const lang = audioLanguageRef.current;
+
+      if (lang === 'ml') {
+        // If more chunks remain for this ayah, play next chunk
+        if (mlChunkQueueRef.current.length > 0) {
+          const nextChunk = mlChunkQueueRef.current.shift();
+          const url = buildTranslateTTSUrl(nextChunk, 'ml');
+          audio.src = url;
+          audio.load();
+          audio.play().catch(() => handleAudioEnded());
+          return;
+        }
+      }
+
+      if (lang === 'ar' || lang === 'ml') {
         handleAudioEnded();
       }
     };
 
-    const onError = (e) => {
-      console.error("Audio element error event:", e);
-      setIsPlaying(false);
-    };
+    const onError = () => setIsPlaying(false);
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -102,99 +113,60 @@ export const AudioProvider = ({ children }) => {
     };
   }, []);
 
-  // Update volume
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
+    if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // Speech synthesis reader for English & Malayalam translations
-  const speakTranslation = (ayah, langCode) => {
-    stopSpeech();
+  // ─── Advance to next ayah (shared handler) ───
+  const handleAudioEnded = () => {
+    const surah = currentSurahRef.current;
+    const idx = currentAyahIndexRef.current;
 
-    speechTrackerRef.current.cancelled = false;
+    if (!surah || idx === -1) { setIsPlaying(false); return; }
 
-    let rawText = langCode.startsWith('ml')
-      ? (ayah.mlTranslation || ayah.enTranslation)
-      : (ayah.enTranslation || ayah.text);
-
-    if (!rawText) {
-      handleAudioEnded();
-      return;
+    const nextIdx = idx + 1;
+    if (nextIdx < surah.ayahs.length) {
+      setCurrentAyahIndex(nextIdx);
+      currentAyahIndexRef.current = nextIdx;
+      setTimeout(() => playAyahByIndex(surah, nextIdx, audioLanguageRef.current), 400);
+    } else {
+      setIsPlaying(false);
+      setCurrentAyahIndex(-1);
+      currentAyahIndexRef.current = -1;
     }
-
-    // Clean footnotes, brackets and extra whitespace for smooth speech
-    const cleanedText = rawText
-      .replace(/\[\d+\]/g, '')
-      .replace(/\(\d+\)/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (langCode.startsWith('ml')) {
-      // ── Malayalam: Use ResponsiveVoice "Malayalam Male" (different engine from Google) ──
-      if (typeof window !== 'undefined' && window.responsiveVoice) {
-        window.responsiveVoice.speak(cleanedText, 'Malayalam Male', {
-          rate: 0.85,
-          pitch: 0.9,
-          volume: 1.0,
-          onstart: () => setIsPlaying(true),
-          onend: () => {
-            if (!speechTrackerRef.current.cancelled) handleAudioEnded();
-          },
-          onerror: () => {
-            if (!speechTrackerRef.current.cancelled) handleAudioEnded();
-          },
-        });
-        setIsPlaying(true);
-      } else {
-        // Fallback: Web Speech API with any available ml voice
-        speakWithWebSpeech(cleanedText, 'ml-IN', 0.85, 0.78);
-      }
-      return;
-    }
-
-    // ── English: Web Speech API ──
-    speakWithWebSpeech(cleanedText, 'en-US', 0.92, 0.82);
   };
 
-  // Internal helper: Web Speech API utterance
-  const speakWithWebSpeech = (text, lang, pitch, rate) => {
+  // ─── English Web Speech (server TTS not needed for English) ───
+  const speakEnglish = (ayah) => {
+    stopSpeech();
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       setIsPlaying(false);
       return;
     }
 
+    speechTrackerRef.current.cancelled = false;
+
+    const rawText = ayah.enTranslation || ayah.text || '';
+    const cleanedText = rawText.replace(/\[\d+\]/g, '').replace(/\(\d+\)/g, '').replace(/\s+/g, ' ').trim();
+    if (!cleanedText) { handleAudioEnded(); return; }
+
     const voices = window.speechSynthesis.getVoices();
-    let selectedVoice = null;
+    const selectedVoice =
+      voices.find(v => v.name.toLowerCase().includes('david')) ||
+      voices.find(v => v.name.toLowerCase().includes('guy')) ||
+      voices.find(v => v.name === 'Google US English') ||
+      voices.find(v => v.lang === 'en-US') ||
+      voices.find(v => v.lang.startsWith('en'));
 
-    if (lang === 'ml-IN') {
-      selectedVoice =
-        voices.find(v => v.name.includes('Midhun')) ||
-        voices.find(v => v.name.includes('Microsoft') && v.lang === 'ml-IN') ||
-        voices.find(v => v.lang === 'ml-IN' && !v.name.includes('Google')) ||
-        voices.find(v => v.lang === 'ml-IN') ||
-        voices.find(v => v.lang.startsWith('ml'));
-    } else {
-      selectedVoice =
-        voices.find(v => v.name.toLowerCase().includes('david')) ||
-        voices.find(v => v.name.toLowerCase().includes('guy')) ||
-        voices.find(v => v.name === 'Google US English') ||
-        voices.find(v => v.lang === 'en-US') ||
-        voices.find(v => v.lang.startsWith('en'));
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
     speechTrackerRef.current.currentUtterance = utterance;
-    utterance.lang = lang;
+    utterance.lang = 'en-US';
     if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.pitch = pitch;
-    utterance.rate = rate;
+    utterance.pitch = 0.92;
+    utterance.rate = 0.82;
     utterance.volume = 1.0;
 
-    utterance.onend = () => {
-      if (!speechTrackerRef.current.cancelled) handleAudioEnded();
-    };
+    utterance.onend = () => { if (!speechTrackerRef.current.cancelled) handleAudioEnded(); };
     utterance.onerror = (err) => {
       if (err.error === 'interrupted' || err.error === 'canceled') return;
       if (!speechTrackerRef.current.cancelled) handleAudioEnded();
@@ -215,68 +187,100 @@ export const AudioProvider = ({ children }) => {
           window.speechSynthesis.resume();
         }
       }, 10000);
-    } catch (err) {
-      console.error('SpeechSynthesis exception:', err);
+    } catch {
       setIsPlaying(false);
     }
   };
 
-  // Continuous playback when audio or speech ends
-  const handleAudioEnded = () => {
-    const surah = currentSurahRef.current;
-    const currentIndex = currentAyahIndexRef.current;
+  // ─── Malayalam via Google Translate TTS (server-side, genuinely different voice) ───
+  const speakMalayalam = (ayah) => {
+    if (!audioRef.current) { setIsPlaying(false); return; }
 
-    if (!surah || currentIndex === -1) {
+    const rawText = ayah.mlTranslation || ayah.enTranslation || '';
+    const cleanedText = rawText.replace(/\[\d+\]/g, '').replace(/\(\d+\)/g, '').replace(/\s+/g, ' ').trim();
+    if (!cleanedText) { handleAudioEnded(); return; }
+
+    // Split into chunks if text is long
+    const chunks = splitAtWordBoundary(cleanedText, ML_TTS_CHUNK_MAX);
+    mlChunkQueueRef.current = chunks.slice(1); // queue remaining chunks after first
+
+    const firstUrl = buildTranslateTTSUrl(chunks[0], 'ml');
+    audioRef.current.src = firstUrl;
+    audioRef.current.load();
+    audioRef.current.play()
+      .then(() => setIsPlaying(true))
+      .catch(() => {
+        // Google Translate TTS blocked (CORS / network) — fallback to Web Speech
+        mlChunkQueueRef.current = [];
+        speakMalayalamFallback(cleanedText);
+      });
+  };
+
+  // Fallback: Web Speech with best available ml voice
+  const speakMalayalamFallback = (text) => {
+    stopSpeech();
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       setIsPlaying(false);
       return;
     }
+    speechTrackerRef.current.cancelled = false;
 
-    const nextIndex = currentIndex + 1;
-    if (nextIndex < surah.ayahs.length) {
-      setCurrentAyahIndex(nextIndex);
-      currentAyahIndexRef.current = nextIndex;
-      
-      setTimeout(() => {
-        playAyahByIndex(surah, nextIndex, audioLanguageRef.current);
-      }, 350);
-    } else {
+    const voices = window.speechSynthesis.getVoices();
+    const selectedVoice =
+      voices.find(v => v.name.includes('Midhun')) ||
+      voices.find(v => v.name.includes('Microsoft') && v.lang === 'ml-IN') ||
+      voices.find(v => v.lang === 'ml-IN') ||
+      voices.find(v => v.lang.startsWith('ml'));
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ml-IN';
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.pitch = 0.85;
+    utterance.rate = 0.78;
+    utterance.volume = 1.0;
+    utterance.onend = () => { if (!speechTrackerRef.current.cancelled) handleAudioEnded(); };
+    utterance.onerror = (err) => {
+      if (err.error === 'interrupted' || err.error === 'canceled') return;
+      if (!speechTrackerRef.current.cancelled) handleAudioEnded();
+    };
+
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+    } catch {
       setIsPlaying(false);
-      setCurrentAyahIndex(-1);
-      currentAyahIndexRef.current = -1;
     }
   };
 
+  // ─── Core play function ───
   const playAyahByIndex = (surah, index, lang = audioLanguageRef.current) => {
     if (!surah || index < 0 || index >= surah.ayahs.length) return;
 
-    // Stop previous audio and speech completely before starting new one
+    // Stop everything
     stopSpeech();
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    mlChunkQueueRef.current = [];
+    if (audioRef.current) audioRef.current.pause();
 
     const ayah = surah.ayahs[index];
     currentSurahRef.current = surah;
     currentAyahIndexRef.current = index;
 
-    // Smoothly scroll active Ayah into view
+    // Scroll active Ayah into view
     const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     if (lang === 'ml') {
-      // Use Google Malayalam neural TTS — clear Kerala accent, male-pitched voice
-      speakTranslation(ayah, 'ml-IN');
+      speakMalayalam(ayah);
       return;
     }
 
     if (lang === 'en') {
-      speakTranslation(ayah, 'en-US');
+      speakEnglish(ayah);
       return;
     }
 
-    // Default: Arabic Studio Recitation
+    // Arabic — studio MP3
     const reciter = settings.defaultReciter || 'ar.alafasy';
     const audioUrl = ayah.audio || `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayah.number}.mp3`;
 
@@ -286,12 +290,8 @@ export const AudioProvider = ({ children }) => {
         audioRef.current.load();
         audioRef.current.play()
           .then(() => setIsPlaying(true))
-          .catch((e) => {
-            console.error("Arabic Audio play error:", e);
-            setIsPlaying(false);
-          });
-      } catch (error) {
-        console.error(error);
+          .catch(() => setIsPlaying(false));
+      } catch {
         setIsPlaying(false);
       }
     }
@@ -319,9 +319,8 @@ export const AudioProvider = ({ children }) => {
 
   const pauseAudio = () => {
     stopSpeech();
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    mlChunkQueueRef.current = [];
+    if (audioRef.current) audioRef.current.pause();
     setIsPlaying(false);
   };
 
@@ -332,7 +331,7 @@ export const AudioProvider = ({ children }) => {
   };
 
   const seek = (time) => {
-    if (audioRef.current && (audioLanguage === 'ar' || audioLanguage === 'ml')) {
+    if (audioRef.current && audioLanguage === 'ar') {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
     }
@@ -340,26 +339,27 @@ export const AudioProvider = ({ children }) => {
 
   const nextAyah = () => {
     if (!currentSurah || currentAyahIndex === -1) return;
-    const nextIndex = currentAyahIndex + 1;
-    if (nextIndex < currentSurah.ayahs.length) {
-      setCurrentAyahIndex(nextIndex);
-      currentAyahIndexRef.current = nextIndex;
-      playAyahByIndex(currentSurah, nextIndex, audioLanguage);
+    const nextIdx = currentAyahIndex + 1;
+    if (nextIdx < currentSurah.ayahs.length) {
+      setCurrentAyahIndex(nextIdx);
+      currentAyahIndexRef.current = nextIdx;
+      playAyahByIndex(currentSurah, nextIdx, audioLanguage);
     }
   };
 
   const prevAyah = () => {
     if (!currentSurah || currentAyahIndex === -1) return;
-    const prevIndex = currentAyahIndex - 1;
-    if (prevIndex >= 0) {
-      setCurrentAyahIndex(prevIndex);
-      currentAyahIndexRef.current = prevIndex;
-      playAyahByIndex(currentSurah, prevIndex, audioLanguage);
+    const prevIdx = currentAyahIndex - 1;
+    if (prevIdx >= 0) {
+      setCurrentAyahIndex(prevIdx);
+      currentAyahIndexRef.current = prevIdx;
+      playAyahByIndex(currentSurah, prevIdx, audioLanguage);
     }
   };
 
   const stopAudio = () => {
     stopSpeech();
+    mlChunkQueueRef.current = [];
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -372,7 +372,9 @@ export const AudioProvider = ({ children }) => {
     setCurrentTime(0);
   };
 
-  const currentAyah = currentSurah && currentAyahIndex !== -1 ? currentSurah.ayahs[currentAyahIndex] : null;
+  const currentAyah = currentSurah && currentAyahIndex !== -1
+    ? currentSurah.ayahs[currentAyahIndex]
+    : null;
 
   return (
     <AudioContext.Provider
@@ -406,8 +408,6 @@ export const AudioProvider = ({ children }) => {
 
 export const useAudio = () => {
   const context = useContext(AudioContext);
-  if (!context) {
-    throw new Error('useAudio must be used within an AudioProvider');
-  }
+  if (!context) throw new Error('useAudio must be used within an AudioProvider');
   return context;
 };
