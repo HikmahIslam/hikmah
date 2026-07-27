@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
   defaultLanguage: 'en', // 'en' or 'ml'
   defaultReciter: 'ar.alafasy', // Alafasy
   audioPlaybackMode: 'ayah', // 'ayah' or 'continuous'
+  viewMode: 'continuous', // 'continuous' (full text) or 'card' (verse-by-verse)
 };
 
 export const SettingsProvider = ({ children }) => {
