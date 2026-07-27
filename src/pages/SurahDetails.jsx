@@ -5,7 +5,7 @@ import AyahCard from '../components/AyahCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAudio } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
-import { ChevronLeft, Play, Pause, Settings2, LayoutList, AlignRight, ArrowLeft, ChevronDown, Check, Sparkles, Music } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Settings2, LayoutList, AlignRight, ArrowLeft, ChevronDown, Check } from 'lucide-react';
 
 const toArabicDigits = (num) => {
   const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -33,11 +33,13 @@ export const SurahDetails = () => {
     const fetchDetails = async () => {
       try {
         setLoading(true);
+        // Load details with the user's preferred reciter
         const data = await getSurahDetails(surahId, settings.defaultReciter);
         if (isMounted) {
           setSurah(data);
           setError(null);
           
+          // Save continue reading progress
           const progress = {
             surahNumber: data.number,
             surahEnglishName: data.englishName,
@@ -64,13 +66,14 @@ export const SurahDetails = () => {
     };
   }, [surahId, settings.defaultReciter]);
 
-  // Scroll to target ayah on load or audio change
+  // Scroll to target ayah on load
   useEffect(() => {
     if (targetAyah && !loading && surah) {
       const timer = setTimeout(() => {
         const el = document.getElementById(`ayah-${targetAyah}`);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Highlight effect
           el.classList.add('ring-2', 'ring-brand-emerald-500/30', 'bg-brand-emerald-50/10', 'dark:bg-brand-emerald-950/15');
           setTimeout(() => {
             el.classList.remove('ring-2', 'ring-brand-emerald-500/30', 'bg-brand-emerald-50/10', 'dark:bg-brand-emerald-950/15');
@@ -80,16 +83,6 @@ export const SurahDetails = () => {
       return () => clearTimeout(timer);
     }
   }, [targetAyah, loading, surah]);
-
-  // Auto-scroll active ayah in Lyrics & Full Text view mode during playback
-  useEffect(() => {
-    if (isPlaying && currentAyah && currentSurah?.number === surah?.number) {
-      const el = document.getElementById(`ayah-${currentAyah.numberInSurah}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  }, [isPlaying, currentAyah?.numberInSurah, currentSurah?.number, surah?.number]);
 
   const handlePlaySurah = () => {
     if (surah) {
@@ -148,12 +141,12 @@ export const SurahDetails = () => {
           </div>
         </div>
 
-        {/* Global Controls — mobile: wrapping toolbar, desktop: single row */}
+        {/* Global Controls — mobile: two wrapping rows, desktop: single row */}
         <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:w-auto md:gap-2.5">
 
-          {/* Row 1 on mobile: View Mode Selector + Language toggle */}
+          {/* Row 1 on mobile: View Mode + Language toggle side by side */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* View Mode Toggle: Full Text | 🎵 Lyrics | Cards */}
+            {/* View Mode Toggle */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
               <button
                 onClick={() => updateSetting('viewMode', 'continuous')}
@@ -166,20 +159,7 @@ export const SurahDetails = () => {
                 aria-label="Switch to Full Text view"
               >
                 <AlignRight className="w-3.5 h-3.5" />
-                <span>Full Text</span>
-              </button>
-              <button
-                onClick={() => updateSetting('viewMode', 'lyrics')}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
-                  currentViewMode === 'lyrics'
-                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-                title="Mushaf Lyrics Karaoke Sync View"
-                aria-label="Switch to Lyrics Sync view"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>🎵 Lyrics</span>
+                <span className="hidden xs:inline sm:inline">Full Text</span>
               </button>
               <button
                 onClick={() => updateSetting('viewMode', 'card')}
@@ -399,140 +379,8 @@ export const SurahDetails = () => {
         </div>
       )}
 
-      {/* ─── 🎵 MODE 1: MUSHAF LYRICS SYNC VIEW (PROMINENT ACTIVE VERSE) ─── */}
-      {currentViewMode === 'lyrics' ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-900/40 rounded-2xl px-4 py-2.5 text-xs text-brand-emerald-700 dark:text-brand-emerald-300">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-              <span className="font-semibold">Mushaf Lyrics Mode:</span>
-              <span className="opacity-90">Verses & Translations sync with audio like live lyrics</span>
-            </div>
-            <span className="text-[10px] bg-brand-emerald-500 text-white font-bold px-2 py-0.5 rounded-full uppercase">
-              {audioLanguage === 'ar' ? 'Arabic' : audioLanguage === 'en' ? 'English' : 'Malayalam'} Audio
-            </span>
-          </div>
-
-          <div className="space-y-6">
-            {surah.ayahs.map((ayah, idx) => {
-              let cleanText = ayah.text;
-              if (surah.number !== 1 && surah.number !== 9 && ayah.numberInSurah === 1) {
-                const bismillahText = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
-                if (cleanText.startsWith(bismillahText)) {
-                  cleanText = cleanText.replace(bismillahText, "").trim();
-                }
-              }
-
-              const isCurrentlyPlaying =
-                isPlaying &&
-                currentSurah?.number === surah.number &&
-                currentAyah?.numberInSurah === ayah.numberInSurah;
-
-              const showEn = !settings.defaultLanguage || settings.defaultLanguage === 'en' || settings.defaultLanguage === 'both';
-              const showMl = settings.defaultLanguage === 'ml' || settings.defaultLanguage === 'both';
-
-              return (
-                <div
-                  key={ayah.numberInSurah}
-                  id={`ayah-${ayah.numberInSurah}`}
-                  onClick={() => playSingleAyah(surah, idx)}
-                  className={`transition-all duration-500 cursor-pointer rounded-3xl p-5 sm:p-7 border ${
-                    isCurrentlyPlaying
-                      ? 'bg-gradient-to-br from-brand-emerald-500/10 via-brand-emerald-500/15 to-brand-emerald-700/10 border-2 border-brand-emerald-500 shadow-2xl shadow-brand-emerald-500/10 scale-[1.01] ring-4 ring-brand-emerald-500/20'
-                      : 'bg-white/60 dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/80 opacity-60 hover:opacity-100 hover:border-brand-emerald-500/40'
-                  }`}
-                >
-                  {/* Lyrics Card Header */}
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/60 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-xl">
-                        {surah.number}:{ayah.numberInSurah}
-                      </span>
-
-                      {isCurrentlyPlaying && (
-                        <div className="flex items-center gap-1.5 bg-brand-emerald-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                          {/* Animated sound wave bars */}
-                          <div className="flex items-center gap-0.5">
-                            <span className="w-1 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                            <span className="w-1 h-3.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                            <span className="w-1 h-2 bg-white rounded-full animate-bounce"></span>
-                          </div>
-                          <span>NOW PLAYING</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playSingleAyah(surah, idx);
-                      }}
-                      className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
-                        isCurrentlyPlaying
-                          ? 'bg-brand-emerald-500 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-brand-emerald-50 hover:text-brand-emerald-600'
-                      }`}
-                    >
-                      {isCurrentlyPlaying ? (
-                        <Pause className="w-3.5 h-3.5 fill-current" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Lyrics Arabic Text */}
-                  <div className="text-right leading-[2.5] text-slate-900 dark:text-white mb-5" dir="rtl">
-                    <span
-                      className={`arabic-text transition-colors ${
-                        isCurrentlyPlaying
-                          ? 'text-brand-emerald-950 dark:text-brand-emerald-100 font-bold'
-                          : 'text-slate-800 dark:text-slate-200'
-                      }`}
-                      style={{ fontSize: `${settings.arabicFontSize * 1.08}px` }}
-                    >
-                      {cleanText}{' '}
-                      <span className="inline-block text-brand-emerald-500 font-bold text-lg select-none px-1">
-                        ﴿{toArabicDigits(ayah.numberInSurah)}﴾
-                      </span>
-                    </span>
-                  </div>
-
-                  {/* Lyrics Translation (Live Lyrics display) */}
-                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-850">
-                    {showEn && (
-                      <p
-                        className={`leading-relaxed transition-colors ${
-                          isCurrentlyPlaying
-                            ? 'text-slate-900 dark:text-slate-100 font-semibold'
-                            : 'text-slate-600 dark:text-slate-400'
-                        }`}
-                        style={{ fontSize: `${settings.translationFontSize * 1.05}px` }}
-                      >
-                        {ayah.enTranslation}
-                      </p>
-                    )}
-
-                    {showMl && ayah.mlTranslation && (
-                      <p
-                        className={`leading-relaxed transition-colors ${
-                          isCurrentlyPlaying
-                            ? 'text-slate-900 dark:text-slate-100 font-semibold'
-                            : 'text-slate-600 dark:text-slate-400'
-                        }`}
-                        style={{ fontSize: `${settings.translationFontSize * 1.05}px` }}
-                      >
-                        {ayah.mlTranslation}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : currentViewMode === 'continuous' ? (
-        /* ─── MODE 2: FULL CONTINUOUS TEXT MUSHAF VIEW ─── */
+      {/* Full Continuous Text View Mode */}
+      {currentViewMode === 'continuous' ? (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-6 md:p-10 shadow-sm space-y-10">
           {/* Continuous Arabic Paragraph */}
           <div className="text-right leading-[2.6] text-slate-900 dark:text-white font-normal" dir="rtl">
@@ -575,30 +423,6 @@ export const SurahDetails = () => {
             })}
           </div>
 
-          {/* Active Ayah Live Lyrics Spotlight in Continuous View */}
-          {isPlaying && currentAyah && currentSurah?.number === surah.number && (
-            <div className="bg-brand-emerald-50/80 dark:bg-brand-emerald-950/40 border-2 border-brand-emerald-500 rounded-2xl p-4 sm:p-5 space-y-2 shadow-lg animate-fade-in">
-              <div className="flex items-center justify-between text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5">
-                    <span className="w-1 h-3 bg-brand-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1 h-4 bg-brand-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1 h-2 bg-brand-emerald-500 rounded-full animate-bounce"></span>
-                  </div>
-                  <span>PLAYING VERSE {currentAyah.numberInSurah} LYRICS</span>
-                </div>
-                <span className="uppercase text-[10px] bg-brand-emerald-500 text-white px-2 py-0.5 rounded-md">
-                  {audioLanguage === 'ar' ? 'Arabic' : audioLanguage === 'en' ? 'English' : 'Malayalam'}
-                </span>
-              </div>
-              <p className="text-slate-800 dark:text-slate-200 font-medium text-sm sm:text-base leading-relaxed">
-                {audioLanguage === 'ml' && currentAyah.mlTranslation
-                  ? currentAyah.mlTranslation
-                  : currentAyah.enTranslation}
-              </p>
-            </div>
-          )}
-
           {/* Full Translations Section */}
           <div className="border-t border-slate-100 dark:border-slate-800/80 pt-8 space-y-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -626,7 +450,7 @@ export const SurahDetails = () => {
           </div>
         </div>
       ) : (
-        /* ─── MODE 3: VERSES CARDS STACK VIEW ─── */
+        /* Verses Cards Stack View Mode */
         <div className="space-y-6">
           {surah.ayahs.map((ayah) => (
             <AyahCard key={ayah.numberInSurah} ayah={ayah} surah={surah} />
