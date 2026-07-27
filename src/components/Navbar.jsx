@@ -27,11 +27,11 @@ export const Navbar = () => {
           {/* Logo / Brand */}
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group" aria-label="Hikmah Qur'an App Home">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-950/80 via-slate-900/90 to-emerald-900/90 dark:from-slate-950 dark:via-emerald-950 dark:to-slate-900 flex items-center justify-center border border-emerald-500/40 shadow-lg shadow-emerald-950/40 group-hover:scale-105 group-hover:border-amber-400/80 group-hover:shadow-emerald-500/30 backdrop-blur-md transition-all duration-300 p-1">
-                <HikmahIcon className="w-full h-full text-amber-400 drop-shadow-sm" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 dark:from-emerald-800 dark:via-emerald-900 dark:to-slate-950 flex items-center justify-center border border-emerald-400/50 shadow-md shadow-emerald-700/30 group-hover:scale-105 group-hover:border-amber-300 transition-all duration-300 p-1">
+                <HikmahIcon className="w-full h-full text-amber-300 drop-shadow-sm" />
               </div>
               <div className="flex items-center">
-                <span className="font-calligraphic font-bold text-xl sm:text-2xl tracking-[0.12em] bg-gradient-to-r from-emerald-700 via-emerald-600 to-amber-600 dark:from-emerald-300 dark:via-emerald-400 dark:to-amber-300 bg-clip-text text-transparent group-hover:from-amber-500 group-hover:to-emerald-500 dark:group-hover:from-amber-300 dark:group-hover:to-emerald-300 transition-all duration-300 drop-shadow-sm">
+                <span className="font-calligraphic font-bold text-xl sm:text-2xl tracking-[0.12em] bg-gradient-to-r from-emerald-600 via-emerald-500 to-amber-500 dark:from-emerald-300 dark:via-emerald-400 dark:to-amber-300 bg-clip-text text-transparent group-hover:from-amber-400 group-hover:to-emerald-400 transition-all duration-300 drop-shadow-sm">
                   HIKMAH
                 </span>
               </div>

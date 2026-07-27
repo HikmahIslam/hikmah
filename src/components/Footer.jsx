@@ -12,10 +12,10 @@ export const Footer = () => {
           {/* Brand/About */}
           <div className="flex flex-col space-y-3 sm:space-y-4">
             <Link to="/" className="flex items-center gap-2.5 w-fit group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-950/80 via-slate-900/90 to-emerald-900/90 dark:from-slate-950 dark:via-emerald-950 dark:to-slate-900 flex items-center justify-center border border-emerald-500/40 p-1 group-hover:border-amber-400/80 transition-all duration-300 backdrop-blur-md">
-                <HikmahIcon className="w-full h-full text-amber-400" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 dark:from-emerald-800 dark:via-emerald-900 dark:to-slate-950 flex items-center justify-center border border-emerald-400/50 p-1 group-hover:border-amber-300 transition-all duration-300">
+                <HikmahIcon className="w-full h-full text-amber-300" />
               </div>
-              <span className="font-calligraphic font-bold text-xl tracking-[0.12em] bg-gradient-to-r from-emerald-700 via-emerald-600 to-amber-600 dark:from-emerald-300 dark:via-emerald-400 dark:to-amber-300 bg-clip-text text-transparent group-hover:from-amber-500 group-hover:to-emerald-500 transition-all duration-300">
+              <span className="font-calligraphic font-bold text-xl tracking-[0.12em] bg-gradient-to-r from-emerald-600 via-emerald-500 to-amber-500 dark:from-emerald-300 dark:via-emerald-400 dark:to-amber-300 bg-clip-text text-transparent group-hover:from-amber-400 group-hover:to-emerald-400 transition-all duration-300">
                 HIKMAH
               </span>
             </Link>
