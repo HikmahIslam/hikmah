@@ -50,11 +50,14 @@ export const AudioProvider = ({ children }) => {
     }
   }, []);
 
-  // Stop any active Web Speech synthesis safely
+  // Stop any active speech (Web Speech API + ResponsiveVoice)
   const stopSpeech = () => {
     speechTrackerRef.current.cancelled = true;
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+    if (typeof window !== 'undefined') {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (window.responsiveVoice && window.responsiveVoice.isPlaying()) {
+        window.responsiveVoice.cancel();
+      }
     }
   };
 
@@ -107,14 +110,8 @@ export const AudioProvider = ({ children }) => {
   }, [volume]);
 
   // Speech synthesis reader for English & Malayalam translations
-  // Uses Google's built-in neural TTS voices when available (Google Malayalam / Google US English)
   const speakTranslation = (ayah, langCode) => {
     stopSpeech();
-
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setIsPlaying(false);
-      return;
-    }
 
     speechTrackerRef.current.cancelled = false;
 
@@ -127,90 +124,89 @@ export const AudioProvider = ({ children }) => {
       return;
     }
 
-    // Clean footnotes, brackets, dashes and extra whitespace for smooth speech
+    // Clean footnotes, brackets and extra whitespace for smooth speech
     const cleanedText = rawText
       .replace(/\[\d+\]/g, '')
       .replace(/\(\d+\)/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
+    if (langCode.startsWith('ml')) {
+      // ── Malayalam: Use ResponsiveVoice "Malayalam Male" (different engine from Google) ──
+      if (typeof window !== 'undefined' && window.responsiveVoice) {
+        window.responsiveVoice.speak(cleanedText, 'Malayalam Male', {
+          rate: 0.85,
+          pitch: 0.9,
+          volume: 1.0,
+          onstart: () => setIsPlaying(true),
+          onend: () => {
+            if (!speechTrackerRef.current.cancelled) handleAudioEnded();
+          },
+          onerror: () => {
+            if (!speechTrackerRef.current.cancelled) handleAudioEnded();
+          },
+        });
+        setIsPlaying(true);
+      } else {
+        // Fallback: Web Speech API with any available ml voice
+        speakWithWebSpeech(cleanedText, 'ml-IN', 0.85, 0.78);
+      }
+      return;
+    }
+
+    // ── English: Web Speech API ──
+    speakWithWebSpeech(cleanedText, 'en-US', 0.92, 0.82);
+  };
+
+  // Internal helper: Web Speech API utterance
+  const speakWithWebSpeech = (text, lang, pitch, rate) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setIsPlaying(false);
+      return;
+    }
+
     const voices = window.speechSynthesis.getVoices();
     let selectedVoice = null;
-    let pitch = 1.0;
-    let rate = 0.82;
 
-    if (langCode.startsWith('ml')) {
-      // Priority order for Malayalam voices — Microsoft Neural first, Google last
-      // Microsoft Midhun: natural male Kerala Malayalam (Windows 11 + Edge installed)
-      // Microsoft Heera/Swara: natural female alternatives
-      // Google Malayalam: fallback
+    if (lang === 'ml-IN') {
       selectedVoice =
-        voices.find(v => v.name.includes('Midhun')) ||                               // Microsoft Midhun Online (Natural) - ml-IN [male]
-        voices.find(v => v.name.includes('Microsoft') && v.lang === 'ml-IN') ||      // Any other Microsoft ml-IN
-        voices.find(v => v.name.includes('Microsoft') && v.lang.startsWith('ml')) || // Microsoft Heera etc.
-        voices.find(v => v.name.includes('Swara')) ||                                 // Swara Online (Natural) - ml-IN
-        voices.find(v => v.name.includes('Keerthana')) ||                             // Keerthana Online (Natural) - ml-IN
-        voices.find(v => v.lang === 'ml-IN' && !v.name.includes('Google')) ||        // Any non-Google ml-IN
-        voices.find(v => v.lang === 'ml-IN') ||                                       // ml-IN fallback
-        voices.find(v => v.lang.startsWith('ml')) ||
-        voices.find(v => v.name.toLowerCase().includes('malayalam'));
-
-      // Natural pitch (let Microsoft voice handle its own prosody)
-      // Slightly slower for clear verse-by-verse reading
-      const isMicrosoftVoice = selectedVoice && selectedVoice.name.includes('Microsoft');
-      pitch = isMicrosoftVoice ? 1.0 : 0.85;   // Microsoft neural voices: keep natural pitch
-      rate  = isMicrosoftVoice ? 0.85 : 0.78;  // Microsoft neural voices: slightly faster natural pace
+        voices.find(v => v.name.includes('Midhun')) ||
+        voices.find(v => v.name.includes('Microsoft') && v.lang === 'ml-IN') ||
+        voices.find(v => v.lang === 'ml-IN' && !v.name.includes('Google')) ||
+        voices.find(v => v.lang === 'ml-IN') ||
+        voices.find(v => v.lang.startsWith('ml'));
     } else {
-      // Priority order for English:
-      // 1. Microsoft David / Guy / George (Windows — clear male voice)
-      // 2. Google US English neural voice
-      // 3. Any en-US voice
       selectedVoice =
         voices.find(v => v.name.toLowerCase().includes('david')) ||
         voices.find(v => v.name.toLowerCase().includes('guy')) ||
-        voices.find(v => v.name.toLowerCase().includes('george')) ||
         voices.find(v => v.name === 'Google US English') ||
         voices.find(v => v.lang === 'en-US') ||
         voices.find(v => v.lang.startsWith('en'));
-
-      pitch = 0.92;
-      rate = 0.82;
     }
 
-    // Log which voice was selected (helps debugging)
-    console.info(`[Audio] TTS voice selected: ${selectedVoice?.name || 'system default'} (${selectedVoice?.lang || langCode})`);
-
-    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    const utterance = new SpeechSynthesisUtterance(text);
     speechTrackerRef.current.currentUtterance = utterance;
-    utterance.lang = langCode.startsWith('ml') ? 'ml-IN' : 'en-US';
+    utterance.lang = lang;
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.pitch = pitch;
     utterance.rate = rate;
     utterance.volume = 1.0;
 
     utterance.onend = () => {
-      if (!speechTrackerRef.current.cancelled) {
-        handleAudioEnded();
-      }
+      if (!speechTrackerRef.current.cancelled) handleAudioEnded();
     };
-
     utterance.onerror = (err) => {
-      // Ignore 'interrupted' errors caused by intentional cancel()
       if (err.error === 'interrupted' || err.error === 'canceled') return;
-      console.error('SpeechSynthesis error:', err);
-      if (!speechTrackerRef.current.cancelled) {
-        handleAudioEnded();
-      }
+      if (!speechTrackerRef.current.cancelled) handleAudioEnded();
     };
 
     try {
-      // Chrome bug: speechSynthesis can stall after ~15s without this keep-alive
-      window.speechSynthesis.cancel(); // clear queue first
+      window.speechSynthesis.cancel();
       if (window.speechSynthesis.paused) window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
       setIsPlaying(true);
 
-      // Chrome workaround: keep synthesis alive on long utterances
+      // Chrome keep-alive workaround
       const keepAlive = setInterval(() => {
         if (speechTrackerRef.current.cancelled || !window.speechSynthesis.speaking) {
           clearInterval(keepAlive);
