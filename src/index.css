@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=Reem+Kufi:wght@500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@500;600;700;800&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
 @import "tailwindcss";
 
 /* Enable class-based dark mode in Tailwind CSS v4 */
@@ -7,6 +7,7 @@
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Outfit', sans-serif;
+  --font-calligraphic: 'El Messiri', 'Cinzel Decorative', 'Cinzel', serif;
   --font-arabic: 'Amiri', 'Scheherazade New', 'Traditional Arabic', serif;
 
   --color-brand-emerald-50: #f0fdf4;

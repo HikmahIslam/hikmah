@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Menu, X, BookOpen, Settings } from 'lucide-react';
+import { Menu, X, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import HikmahIcon from './HikmahIcon';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,16 +26,13 @@ export const Navbar = () => {
           
           {/* Logo / Brand */}
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group" aria-label="Hikmah Qur'an App Home">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-emerald-500 to-brand-emerald-700 flex items-center justify-center text-white shadow-md shadow-brand-emerald-500/20 group-hover:scale-105 transition-transform duration-300">
-                <BookOpen className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-brand-gold-100" />
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group" aria-label="Hikmah Qur'an App Home">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-950/80 via-slate-900/90 to-emerald-900/90 dark:from-slate-950 dark:via-emerald-950 dark:to-slate-900 flex items-center justify-center border border-emerald-500/40 shadow-lg shadow-emerald-950/40 group-hover:scale-105 group-hover:border-amber-400/80 group-hover:shadow-emerald-500/30 backdrop-blur-md transition-all duration-300 p-1">
+                <HikmahIcon className="w-full h-full text-amber-400 drop-shadow-sm" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-display font-bold text-base sm:text-lg leading-tight tracking-wider text-slate-800 dark:text-white group-hover:text-brand-emerald-600 dark:group-hover:text-brand-emerald-400 transition-colors">
+              <div className="flex items-center">
+                <span className="font-calligraphic font-bold text-xl sm:text-2xl tracking-[0.12em] bg-gradient-to-r from-emerald-700 via-emerald-600 to-amber-600 dark:from-emerald-300 dark:via-emerald-400 dark:to-amber-300 bg-clip-text text-transparent group-hover:from-amber-500 group-hover:to-emerald-500 dark:group-hover:from-amber-300 dark:group-hover:to-emerald-300 transition-all duration-300 drop-shadow-sm">
                   HIKMAH
-                </span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-widest uppercase">
-                  Qur'an App
                 </span>
               </div>
             </Link>

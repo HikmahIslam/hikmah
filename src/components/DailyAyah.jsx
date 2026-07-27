@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getDailyAyah } from '../services/quranApi';
 import { useSettings } from '../context/SettingsContext';
-import { Copy, Check, Sparkles, BookOpen } from 'lucide-react';
+import { Copy, Check, BookOpen } from 'lucide-react';
 
 export const DailyAyah = () => {
   const { settings } = useSettings();
@@ -59,10 +59,7 @@ export const DailyAyah = () => {
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-4.5 sm:p-6 lg:p-8 shadow-sm space-y-4 sm:space-y-5 relative overflow-hidden">
       
-      {/* Sparkles background effect */}
-      <div className="absolute top-0 right-0 p-3 text-brand-gold-500/20 pointer-events-none">
-        <Sparkles className="w-8 h-8 sm:w-12 sm:h-12" />
-      </div>
+
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
