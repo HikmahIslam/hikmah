@@ -12,16 +12,14 @@ export const AudioProvider = ({ children }) => {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [audioPhase, setAudioPhase] = useState('arabic'); // 'arabic' or 'translation'
-  const [speakingTranslationAyah, setSpeakingTranslationAyah] = useState(null); // verse identifier if single translation speech active
+  const [audioLanguage, setAudioLanguage] = useState('ar'); // 'ar' | 'en' | 'ml'
 
   const audioRef = useRef(null);
   
-  // Refs for tracking state inside event listeners without closure staleness
+  // Refs for tracking state inside audio event listeners without closure staleness
   const currentSurahRef = useRef(currentSurah);
   const currentAyahIndexRef = useRef(currentAyahIndex);
-  const audioPhaseRef = useRef(audioPhase);
-  const settingsRef = useRef(settings);
+  const audioLanguageRef = useRef(audioLanguage);
 
   useEffect(() => {
     currentSurahRef.current = currentSurah;
@@ -32,23 +30,17 @@ export const AudioProvider = ({ children }) => {
   }, [currentAyahIndex]);
 
   useEffect(() => {
-    audioPhaseRef.current = audioPhase;
-  }, [audioPhase]);
+    audioLanguageRef.current = audioLanguage;
+  }, [audioLanguage]);
 
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
+  // Stop any active Web Speech synthesis
+  const stopSpeech = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
 
-  // Cancel Web Speech on unmount
-  useEffect(() => {
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
-  // Initialize Audio element
+  // Initialize Audio object
   useEffect(() => {
     const audio = new Audio();
     audio.volume = volume;
@@ -68,7 +60,12 @@ export const AudioProvider = ({ children }) => {
 
     const onError = (e) => {
       console.error("Audio playback error event:", e);
-      setIsPlaying(false);
+      // If error occurs for English audio MP3, fallback to SpeechSynthesis
+      if (audioLanguageRef.current === 'en' && currentSurahRef.current && currentAyahIndexRef.current !== -1) {
+        speakTranslationFallback(currentSurahRef.current.ayahs[currentAyahIndexRef.current], 'en-US');
+      } else {
+        setIsPlaying(false);
+      }
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -77,6 +74,7 @@ export const AudioProvider = ({ children }) => {
     audio.addEventListener('error', onError);
 
     return () => {
+      stopSpeech();
       audio.pause();
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -92,129 +90,75 @@ export const AudioProvider = ({ children }) => {
     }
   }, [volume]);
 
-  // Stop any active SpeechSynthesis utterance
-  const stopSpeech = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    setSpeakingTranslationAyah(null);
-  };
-
-  // Speak translation text using Web Speech API
-  const speakText = (text, lang = 'en', onComplete = null) => {
-    if (!('speechSynthesis' in window) || !text) {
-      if (onComplete) onComplete();
+  // Speech synthesis fallback helper
+  const speakTranslationFallback = (ayah, langCode) => {
+    stopSpeech();
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setIsPlaying(false);
       return;
     }
 
-    stopSpeech();
+    const textToSpeak = langCode.startsWith('ml')
+      ? (ayah.mlTranslation || ayah.enTranslation)
+      : (ayah.enTranslation || ayah.text);
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'ml' ? 'ml-IN' : 'en-US';
-    utterance.rate = 0.92;
-    utterance.volume = volume;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = langCode;
+    utterance.rate = 0.9;
 
     utterance.onend = () => {
-      setIsPlaying(false);
-      setSpeakingTranslationAyah(null);
-      if (onComplete) onComplete();
+      handleAudioEnded();
     };
 
     utterance.onerror = (err) => {
-      console.warn("Speech synthesis notice/error:", err);
-      setIsPlaying(false);
-      setSpeakingTranslationAyah(null);
-      if (onComplete) onComplete();
+      console.error("SpeechSynthesis error:", err);
+      handleAudioEnded();
     };
 
-    setIsPlaying(true);
-    window.speechSynthesis.speak(utterance);
+    try {
+      window.speechSynthesis.speak(utterance);
+      setIsPlaying(true);
+    } catch (err) {
+      console.error("SpeechSynthesis exception:", err);
+      setIsPlaying(false);
+    }
   };
 
-  // Handle end of an audio track (Arabic audio or Translation audio)
+  // Continuous playback when audio or speech ends
   const handleAudioEnded = () => {
     const surah = currentSurahRef.current;
     const currentIndex = currentAyahIndexRef.current;
-    const phase = audioPhaseRef.current;
-    const currentAudioMode = settingsRef.current.audioMode || 'arabic';
 
     if (!surah || currentIndex === -1) {
       setIsPlaying(false);
       return;
     }
 
-    // If audioMode is 'both' and we just finished Arabic phase, play translation phase for same verse
-    if (currentAudioMode === 'both' && phase === 'arabic') {
-      setAudioPhase('translation');
-      audioPhaseRef.current = 'translation';
-      playTranslationForIndex(surah, currentIndex, () => {
-        // After translation ends, move to next verse
-        advanceToNextAyah(surah, currentIndex);
-      });
-      return;
-    }
-
-    // Otherwise, advance to next verse
-    advanceToNextAyah(surah, currentIndex);
-  };
-
-  const advanceToNextAyah = (surah, currentIndex) => {
     const nextIndex = currentIndex + 1;
     if (nextIndex < surah.ayahs.length) {
       setCurrentAyahIndex(nextIndex);
       currentAyahIndexRef.current = nextIndex;
       
       setTimeout(() => {
-        playAyahByIndex(surah, nextIndex);
+        playAyahByIndex(surah, nextIndex, audioLanguageRef.current);
       }, 300);
     } else {
-      // Reached end of Surah
       setIsPlaying(false);
       setCurrentAyahIndex(-1);
       currentAyahIndexRef.current = -1;
-      setAudioPhase('arabic');
     }
   };
 
-  // Play Translation for a specific verse
-  const playTranslationForIndex = (surah, index, onEndedCallback = null) => {
-    const ayah = surah.ayahs[index];
-    if (!ayah) {
-      if (onEndedCallback) onEndedCallback();
-      return;
-    }
+  const playAyahByIndex = (surah, index, lang = audioLanguageRef.current) => {
+    if (!surah || index < 0 || index >= surah.ayahs.length) return;
 
-    const preferredLang = settingsRef.current.defaultLanguage || 'en';
-    
-    // Check if English audio recitation (Ibrahim Walk) CDN MP3 can be used
-    if (preferredLang === 'en') {
-      const enAudioUrl = `https://cdn.islamic.network/quran/audio/128/en.walk/${ayah.number}.mp3`;
-      if (audioRef.current) {
-        audioRef.current.src = enAudioUrl;
-        audioRef.current.load();
-        audioRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(() => {
-            // Fallback to Web Speech synthesis if CDN audio fails
-            const textToSpeak = ayah.enTranslation;
-            speakText(textToSpeak, 'en', onEndedCallback);
-          });
-        return;
-      }
-    }
-
-    // For Malayalam or fallback, use Web Speech API
-    const textToSpeak = preferredLang === 'ml' && ayah.mlTranslation ? ayah.mlTranslation : ayah.enTranslation;
-    speakText(textToSpeak, preferredLang, onEndedCallback);
-  };
-
-  // Play single verse or start continuous playback based on audioMode
-  const playAyahByIndex = (surah, index) => {
-    if (!audioRef.current || !surah || index < 0 || index >= surah.ayahs.length) return;
-
+    // Stop current speech or mp3
     stopSpeech();
-    const ayah = surah.ayahs[index];
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
 
+    const ayah = surah.ayahs[index];
     currentSurahRef.current = surah;
     currentAyahIndexRef.current = index;
 
@@ -224,74 +168,70 @@ export const AudioProvider = ({ children }) => {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    const currentAudioMode = settingsRef.current.audioMode || 'arabic';
-
-    if (currentAudioMode === 'translation') {
-      setAudioPhase('translation');
-      audioPhaseRef.current = 'translation';
-      playTranslationForIndex(surah, index, () => {
-        handleAudioEnded();
-      });
+    if (lang === 'ml') {
+      // Malayalam Translation Audio via Web Speech API
+      speakTranslationFallback(ayah, 'ml-IN');
       return;
     }
 
-    // Default or 'both': start with Arabic audio
-    setAudioPhase('arabic');
-    audioPhaseRef.current = 'arabic';
+    if (lang === 'en') {
+      // English Audio (Try Islamic Network English Recitation first, or Web Speech)
+      const audioUrl = `https://cdn.islamic.network/quran/audio/128/en.walk/${ayah.number}.mp3`;
+      if (audioRef.current) {
+        try {
+          audioRef.current.src = audioUrl;
+          audioRef.current.load();
+          audioRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(() => speakTranslationFallback(ayah, 'en-US'));
+        } catch (e) {
+          speakTranslationFallback(ayah, 'en-US');
+        }
+      } else {
+        speakTranslationFallback(ayah, 'en-US');
+      }
+      return;
+    }
 
-    const selectedReciter = settingsRef.current.defaultReciter || 'ar.alafasy';
-    let audioUrl = ayah.audio || `https://cdn.islamic.network/quran/audio/128/${selectedReciter}/${ayah.number}.mp3`;
+    // Default: Arabic Recitation
+    const reciter = settings.defaultReciter || 'ar.alafasy';
+    const audioUrl = ayah.audio || `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayah.number}.mp3`;
 
-    try {
-      audioRef.current.src = audioUrl;
-      audioRef.current.load();
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((e) => {
-          console.error("Audio playback error:", e);
-          setIsPlaying(false);
-        });
-    } catch (error) {
-      console.error(error);
-      setIsPlaying(false);
+    if (audioRef.current) {
+      try {
+        audioRef.current.src = audioUrl;
+        audioRef.current.load();
+        audioRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch((e) => {
+            console.error("Audio playback error:", e);
+            setIsPlaying(false);
+          });
+      } catch (error) {
+        console.error(error);
+        setIsPlaying(false);
+      }
     }
   };
 
-  const playSurah = (surah, startAyahIndex = 0) => {
+  const playSurah = (surah, startAyahIndex = 0, lang = audioLanguage) => {
+    setAudioLanguage(lang);
+    audioLanguageRef.current = lang;
     setCurrentSurah(surah);
     setCurrentAyahIndex(startAyahIndex);
     currentSurahRef.current = surah;
     currentAyahIndexRef.current = startAyahIndex;
-    playAyahByIndex(surah, startAyahIndex);
+    playAyahByIndex(surah, startAyahIndex, lang);
   };
 
-  const playSingleAyah = (surah, index) => {
+  const playSingleAyah = (surah, index, lang = audioLanguage) => {
+    setAudioLanguage(lang);
+    audioLanguageRef.current = lang;
     setCurrentSurah(surah);
     setCurrentAyahIndex(index);
     currentSurahRef.current = surah;
     currentAyahIndexRef.current = index;
-    playAyahByIndex(surah, index);
-  };
-
-  // Dedicated function to speak standalone translation of any verse (clicked directly from card/text)
-  const speakSingleTranslation = (text, lang, key) => {
-    if (speakingTranslationAyah === key && isPlaying) {
-      stopSpeech();
-      setIsPlaying(false);
-      return;
-    }
-
-    // Pause any background audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-
-    setSpeakingTranslationAyah(key);
-    speakText(text, lang, () => {
-      setSpeakingTranslationAyah(null);
-    });
+    playAyahByIndex(surah, index, lang);
   };
 
   const pauseAudio = () => {
@@ -303,19 +243,13 @@ export const AudioProvider = ({ children }) => {
   };
 
   const resumeAudio = () => {
-    if (audioRef.current && currentSurah && currentAyahIndex !== -1) {
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+    if (currentSurah && currentAyahIndex !== -1) {
+      playAyahByIndex(currentSurah, currentAyahIndex, audioLanguage);
     }
   };
 
   const seek = (time) => {
-    if (audioRef.current) {
+    if (audioRef.current && audioLanguage === 'ar') {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
     }
@@ -327,7 +261,7 @@ export const AudioProvider = ({ children }) => {
     if (nextIndex < currentSurah.ayahs.length) {
       setCurrentAyahIndex(nextIndex);
       currentAyahIndexRef.current = nextIndex;
-      playAyahByIndex(currentSurah, nextIndex);
+      playAyahByIndex(currentSurah, nextIndex, audioLanguage);
     }
   };
 
@@ -337,7 +271,7 @@ export const AudioProvider = ({ children }) => {
     if (prevIndex >= 0) {
       setCurrentAyahIndex(prevIndex);
       currentAyahIndexRef.current = prevIndex;
-      playAyahByIndex(currentSurah, prevIndex);
+      playAyahByIndex(currentSurah, prevIndex, audioLanguage);
     }
   };
 
@@ -352,7 +286,6 @@ export const AudioProvider = ({ children }) => {
     setCurrentAyahIndex(-1);
     currentSurahRef.current = null;
     currentAyahIndexRef.current = -1;
-    setAudioPhase('arabic');
     setCurrentTime(0);
   };
 
@@ -371,11 +304,10 @@ export const AudioProvider = ({ children }) => {
         setVolume,
         isMinimized,
         setIsMinimized,
-        audioPhase,
-        speakingTranslationAyah,
+        audioLanguage,
+        setAudioLanguage,
         playSurah,
         playSingleAyah,
-        speakSingleTranslation,
         pauseAudio,
         resumeAudio,
         seek,

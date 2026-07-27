@@ -5,11 +5,10 @@ const SettingsContext = createContext();
 const DEFAULT_SETTINGS = {
   arabicFontSize: 32, // in px
   translationFontSize: 16, // in px
-  defaultLanguage: 'en', // 'en', 'ml', or 'both'
+  defaultLanguage: 'en', // 'en' or 'ml'
   defaultReciter: 'ar.alafasy', // Alafasy
   audioPlaybackMode: 'ayah', // 'ayah' or 'continuous'
   viewMode: 'continuous', // 'continuous' (full text) or 'card' (verse-by-verse)
-  audioMode: 'arabic', // 'arabic', 'translation', or 'both'
 };
 
 export const SettingsProvider = ({ children }) => {

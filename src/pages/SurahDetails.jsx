@@ -5,7 +5,7 @@ import AyahCard from '../components/AyahCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAudio } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
-import { ChevronLeft, Play, Pause, Settings2, LayoutList, AlignRight, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Settings2, LayoutList, AlignRight, ArrowLeft, ChevronDown, Check } from 'lucide-react';
 
 const toArabicDigits = (num) => {
   const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -18,12 +18,13 @@ export const SurahDetails = () => {
   const navigate = useNavigate();
   
   const { settings, updateSetting } = useSettings();
-  const { playSurah, playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah } = useAudio();
+  const { playSurah, playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah, audioLanguage, setAudioLanguage } = useAudio();
 
   const [surah, setSurah] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
+  const [showAudioLangDropdown, setShowAudioLangDropdown] = useState(false);
 
   const targetAyah = searchParams.get('ayah');
 
@@ -213,30 +214,85 @@ export const SurahDetails = () => {
             </div>
           </div>
 
-          {/* Row 2 on mobile: Listen/Pause button + Settings icon */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            {/* Audio Recitation button — full width on mobile */}
-            <button
-              onClick={handlePlaySurah}
-              className={`flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold tracking-wide transition-all duration-300 min-h-[44px] ${
-                isWholeSurahPlaying
-                  ? 'bg-brand-emerald-600 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-700'
-                  : 'bg-brand-emerald-500 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-600'
-              }`}
-              aria-label={isWholeSurahPlaying ? "Pause Surah recitation" : "Listen to Surah recitation"}
-            >
-              {isWholeSurahPlaying ? (
-                <>
-                  <Pause className="w-4 h-4 fill-current flex-shrink-0" />
-                  Pause
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 fill-current ml-0.5 flex-shrink-0" />
-                  Listen Surah
-                </>
+          {/* Row 2 on mobile: Listen/Pause Split-Button + Settings icon */}
+          <div className="flex items-center gap-2 w-full md:w-auto relative">
+            {/* Audio Recitation Split Button */}
+            <div className="relative inline-flex items-center flex-1 md:flex-none">
+              <button
+                onClick={handlePlaySurah}
+                className={`flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-l-2xl text-xs font-semibold tracking-wide transition-all duration-300 min-h-[44px] ${
+                  isWholeSurahPlaying
+                    ? 'bg-brand-emerald-600 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-700'
+                    : 'bg-brand-emerald-500 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-600'
+                }`}
+                aria-label={isWholeSurahPlaying ? "Pause Surah recitation" : "Listen to Surah recitation"}
+              >
+                {isWholeSurahPlaying ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current flex-shrink-0" />
+                    Pause ({audioLanguage === 'ar' ? 'Arabic' : audioLanguage === 'en' ? 'English' : 'Malayalam'})
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current ml-0.5 flex-shrink-0" />
+                    Listen ({audioLanguage === 'ar' ? 'Arabic' : audioLanguage === 'en' ? 'English' : 'Malayalam'})
+                  </>
+                )}
+              </button>
+
+              {/* Dropdown Chevron Trigger */}
+              <button
+                onClick={() => setShowAudioLangDropdown(!showAudioLangDropdown)}
+                className={`px-2 py-2.5 rounded-r-2xl text-white border-l transition-colors min-h-[44px] flex items-center justify-center ${
+                  isWholeSurahPlaying
+                    ? 'bg-brand-emerald-700 border-brand-emerald-500 hover:bg-brand-emerald-800'
+                    : 'bg-brand-emerald-600 border-brand-emerald-400/40 hover:bg-brand-emerald-700'
+                }`}
+                title="Select audio recitation language"
+                aria-label="Select audio language (Arabic, English, Malayalam)"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAudioLangDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showAudioLangDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-1.5 space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                    Select Audio Language
+                  </div>
+                  {[
+                    { code: 'ar', label: 'Arabic Recitation', sub: 'Qur\'an Studio MP3', flag: '🇸🇦' },
+                    { code: 'en', label: 'English Translation', sub: 'Audio / Voice', flag: '🇬🇧' },
+                    { code: 'ml', label: 'Malayalam Translation', sub: 'Voice Reading', flag: '🇮🇳' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.code}
+                      onClick={() => {
+                        setAudioLanguage(opt.code);
+                        setShowAudioLangDropdown(false);
+                        if (surah) {
+                          playSurah(surah, 0, opt.code);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-left transition-all ${
+                        audioLanguage === opt.code
+                          ? 'bg-brand-emerald-50 dark:bg-brand-emerald-950/40 text-brand-emerald-600 dark:text-brand-emerald-400 font-bold'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{opt.flag}</span>
+                        <div>
+                          <div className="font-semibold leading-tight">{opt.label}</div>
+                          <div className="text-[10px] text-slate-400 font-normal">{opt.sub}</div>
+                        </div>
+                      </div>
+                      {audioLanguage === opt.code && <Check className="w-4 h-4 text-brand-emerald-500 flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
 
             <button
               onClick={() => setShowQuickSettings(!showQuickSettings)}
@@ -304,38 +360,12 @@ export const SurahDetails = () => {
               <select
                 value={settings.defaultLanguage}
                 onChange={(e) => updateSetting('defaultLanguage', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-emerald-500 min-h-[36px]"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-emerald-500"
               >
                 <option value="en">English Only</option>
                 <option value="ml">Malayalam Only</option>
                 <option value="both">Both (En + Ml)</option>
               </select>
-            </div>
-
-            {/* Audio Mode Selection */}
-            <div className="space-y-2 col-span-1 sm:col-span-3 border-t border-slate-100 dark:border-slate-800/80 pt-3">
-              <div className="text-xs font-semibold text-slate-655 dark:text-slate-350 mb-1">
-                Audio Recitation & Translation Mode
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {[
-                  { id: 'arabic', label: 'Arabic Recitation Only' },
-                  { id: 'translation', label: 'Translation Speech/Audio Only' },
-                  { id: 'both', label: 'Arabic + Translation Audio' },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={() => updateSetting('audioMode', mode.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
-                      (settings.audioMode || 'arabic') === mode.id
-                        ? 'bg-brand-emerald-500 text-white shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750'
-                    }`}
-                  >
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
           </div>
