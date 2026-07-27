@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
 @import "tailwindcss";
 
+/* Enable class-based dark mode in Tailwind CSS v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Outfit', sans-serif;
@@ -37,6 +40,25 @@
   50% { opacity: 0.85; }
 }
 
+/* Base Document Styles */
+html {
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+}
+
+html.dark {
+  background-color: #020617; /* slate-950 */
+  color: #f8fafc; /* slate-50 */
+}
+
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  background-color: inherit;
+  color: inherit;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -68,13 +90,6 @@
   background: #475569;
 }
 
-/* Base Body Styles */
-body {
-  font-family: var(--font-sans);
-  overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
 /* Smooth custom styles for spiritual reading */
 .arabic-text {
   font-family: var(--font-arabic);
@@ -84,8 +99,8 @@ body {
 
 /* Islamic Geometric Background elements */
 .islamic-pattern {
-  background-image: radial-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
-                    radial-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(16, 185, 129, 0.06) 1px, transparent 1px),
+                    radial-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px);
   background-size: 24px 24px;
   background-position: 0 0, 12px 12px;
 }
@@ -97,13 +112,13 @@ body {
 
 /* Glassmorphism utility */
 .glass-panel {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .glass-panel {
-  background-color: rgba(15, 23, 42, 0.8);
+  background-color: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
