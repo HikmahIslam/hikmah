@@ -179,6 +179,31 @@ export const Settings = () => {
             </div>
 
           </div>
+
+          {/* Audio Playback Mode */}
+          <div className="mt-6 border-t border-slate-100 dark:border-slate-800/80 pt-5 space-y-3">
+            <label className="text-sm font-bold text-slate-800 dark:text-white block">Audio Playback Mode</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {[
+                { id: 'arabic', label: 'Arabic Recitation Only', desc: 'Plays traditional Arabic audio reciters' },
+                { id: 'translation', label: 'Translation Audio Only', desc: 'Speaks English / Malayalam translation' },
+                { id: 'both', label: 'Arabic + Translation', desc: 'Plays Arabic verse then speaks translation' },
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => updateSetting('audioMode', mode.id)}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    (settings.audioMode || 'arabic') === mode.id
+                      ? 'border-brand-emerald-500 bg-brand-emerald-50/30 dark:bg-brand-emerald-950/20 text-brand-emerald-600 dark:text-brand-emerald-400 font-semibold shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <p className="text-xs font-bold">{mode.label}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{mode.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
       </div>

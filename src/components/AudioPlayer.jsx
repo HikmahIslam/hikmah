@@ -23,6 +23,7 @@ export const AudioPlayer = () => {
     setVolume,
     isMinimized,
     setIsMinimized,
+    audioPhase,
     pauseAudio,
     resumeAudio,
     seek,
@@ -147,9 +148,14 @@ export const AudioPlayer = () => {
                   {currentSurah.name}
                 </span>
               </div>
-              <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
-                Ayah {currentAyah?.numberInSurah || currentAyahIndex + 1} / {currentSurah.numberOfAyahs}
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+                  Ayah {currentAyah?.numberInSurah || currentAyahIndex + 1} / {currentSurah.numberOfAyahs}
+                </span>
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-brand-emerald-50 dark:bg-brand-emerald-950/40 text-brand-emerald-600 dark:text-brand-emerald-400 border border-brand-emerald-200/50 dark:border-brand-emerald-800/50">
+                  {audioPhase === 'translation' ? 'Translation Audio' : 'Arabic Recitation'}
+                </span>
+              </div>
             </div>
           </div>
 

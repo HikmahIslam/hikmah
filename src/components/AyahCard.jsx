@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Play, Pause, Bookmark, Copy, Check, Share2 } from 'lucide-react';
+import { Play, Pause, Bookmark, Copy, Check, Share2, Volume2, VolumeX } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useBookmarks } from '../context/BookmarksContext';
 import { useSettings } from '../context/SettingsContext';
 
 export const AyahCard = ({ ayah, surah }) => {
-  const { playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah } = useAudio();
+  const { playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah, speakSingleTranslation, speakingTranslationAyah } = useAudio();
   const { toggleBookmark, isBookmarked } = useBookmarks();
   const { settings } = useSettings();
   const [isCopied, setIsCopied] = useState(false);
@@ -70,6 +70,9 @@ export const AyahCard = ({ ayah, surah }) => {
     }
   }
 
+  const enSpeechKey = `${surah.number}_${numberInSurah}_en`;
+  const mlSpeechKey = `${surah.number}_${numberInSurah}_ml`;
+
   return (
     <div
       id={`ayah-${numberInSurah}`}
@@ -85,7 +88,7 @@ export const AyahCard = ({ ayah, surah }) => {
           {surah.number}:{numberInSurah}
         </span>
         
-        {/* Action Buttons - wrap on very small screens */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
           <button
             onClick={handlePlayToggle}
@@ -95,6 +98,7 @@ export const AyahCard = ({ ayah, surah }) => {
                 : 'text-slate-550 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
             aria-label={isCurrentlyPlaying ? "Pause verse audio" : "Play verse audio"}
+            title={isCurrentlyPlaying ? "Pause Arabic recitation" : "Play Arabic recitation"}
           >
             {isCurrentlyPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
           </button>
@@ -140,11 +144,27 @@ export const AyahCard = ({ ayah, surah }) => {
         </p>
       </div>
 
-      {/* Translations */}
-      <div className="space-y-3 border-l-2 border-brand-emerald-500/25 pl-3.5 sm:pl-4 py-1">
+      {/* Translations with individual Listen Translation audio buttons */}
+      <div className="space-y-3.5 border-l-2 border-brand-emerald-500/25 pl-3.5 sm:pl-4 py-1">
+        {/* English Translation */}
         {(!settings.defaultLanguage || settings.defaultLanguage === 'en' || settings.defaultLanguage === 'both') && (
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase block">English</span>
+          <div className="space-y-1 group/en">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">English</span>
+              <button
+                onClick={() => speakSingleTranslation(enTranslation, 'en', enSpeechKey)}
+                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all ${
+                  speakingTranslationAyah === enSpeechKey
+                    ? 'bg-brand-emerald-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-brand-emerald-600 dark:hover:text-brand-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Listen to English translation"
+                aria-label="Listen to English translation"
+              >
+                <Volume2 className={`w-3 h-3 ${speakingTranslationAyah === enSpeechKey ? 'animate-bounce' : ''}`} />
+                <span>{speakingTranslationAyah === enSpeechKey ? 'Speaking...' : 'Listen'}</span>
+              </button>
+            </div>
             <p
               className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans break-words"
               style={{ fontSize: `${settings.translationFontSize}px` }}
@@ -154,9 +174,25 @@ export const AyahCard = ({ ayah, surah }) => {
           </div>
         )}
 
+        {/* Malayalam Translation */}
         {(settings.defaultLanguage === 'ml' || settings.defaultLanguage === 'both') && mlTranslation && (
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase block">Malayalam</span>
+          <div className="space-y-1 group/ml">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Malayalam</span>
+              <button
+                onClick={() => speakSingleTranslation(mlTranslation, 'ml', mlSpeechKey)}
+                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all ${
+                  speakingTranslationAyah === mlSpeechKey
+                    ? 'bg-brand-emerald-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-brand-emerald-600 dark:hover:text-brand-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Listen to Malayalam translation"
+                aria-label="Listen to Malayalam translation"
+              >
+                <Volume2 className={`w-3 h-3 ${speakingTranslationAyah === mlSpeechKey ? 'animate-bounce' : ''}`} />
+                <span>{speakingTranslationAyah === mlSpeechKey ? 'Speaking...' : 'Listen'}</span>
+              </button>
+            </div>
             <p
               className="text-slate-700 dark:text-slate-350 leading-relaxed font-sans break-words"
               style={{ fontSize: `${settings.translationFontSize}px` }}

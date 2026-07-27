@@ -304,12 +304,38 @@ export const SurahDetails = () => {
               <select
                 value={settings.defaultLanguage}
                 onChange={(e) => updateSetting('defaultLanguage', e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-emerald-500"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-emerald-500 min-h-[36px]"
               >
                 <option value="en">English Only</option>
                 <option value="ml">Malayalam Only</option>
                 <option value="both">Both (En + Ml)</option>
               </select>
+            </div>
+
+            {/* Audio Mode Selection */}
+            <div className="space-y-2 col-span-1 sm:col-span-3 border-t border-slate-100 dark:border-slate-800/80 pt-3">
+              <div className="text-xs font-semibold text-slate-655 dark:text-slate-350 mb-1">
+                Audio Recitation & Translation Mode
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {[
+                  { id: 'arabic', label: 'Arabic Recitation Only' },
+                  { id: 'translation', label: 'Translation Speech/Audio Only' },
+                  { id: 'both', label: 'Arabic + Translation Audio' },
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    onClick={() => updateSetting('audioMode', mode.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                      (settings.audioMode || 'arabic') === mode.id
+                        ? 'bg-brand-emerald-500 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750'
+                    }`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
           </div>
