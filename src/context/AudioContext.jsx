@@ -238,9 +238,12 @@ export const AudioProvider = ({ children }) => {
 
     if (lang === 'ml') {
       // Authentic Human Male Studio Audio Recitation (Cheriamundam Abdul Hameed & Parappoor Kunhi Mohammed)
+      // Primary CDN: Islamic Network ml.abdulhameed edition with full CORS support
+      const mlAudioUrl = `https://cdn.islamic.network/quran/audio/128/ml.abdulhameed/${ayah.number}.mp3`;
+      
       const surahPad = String(surah.number).padStart(3, '0');
       const ayahPad = String(ayah.numberInSurah).padStart(3, '0');
-      const mlAudioUrl = `https://everyayah.com/data/Malayalam_Abdul_Hameed_and_Kunhi_128kbps/${surahPad}${ayahPad}.mp3`;
+      const fallbackUrl = `https://everyayah.com/data/Malayalam_Abdul_Hameed_and_Kunhi_128kbps/${surahPad}${ayahPad}.mp3`;
 
       if (audioRef.current) {
         try {
@@ -248,9 +251,13 @@ export const AudioProvider = ({ children }) => {
           audioRef.current.load();
           audioRef.current.play()
             .then(() => setIsPlaying(true))
-            .catch((e) => {
-              console.warn("EveryAyah Malayalam audio load error, fallback to TTS:", e);
-              speakTranslation(ayah, 'ml-IN');
+            .catch(() => {
+              // Try secondary EveryAyah studio MP3
+              audioRef.current.src = fallbackUrl;
+              audioRef.current.load();
+              audioRef.current.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => speakTranslation(ayah, 'ml-IN'));
             });
         } catch (e) {
           speakTranslation(ayah, 'ml-IN');
