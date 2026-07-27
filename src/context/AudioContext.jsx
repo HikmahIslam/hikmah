@@ -34,7 +34,7 @@ export const AudioProvider = ({ children }) => {
     audioLanguageRef.current = audioLanguage;
   }, [audioLanguage]);
 
-  // Pre-fetch system voices for SpeechSynthesis
+  // Pre-fetch system voices for SpeechSynthesis fallback
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
@@ -58,7 +58,7 @@ export const AudioProvider = ({ children }) => {
     }
   };
 
-  // Initialize Audio object for Arabic recitation
+  // Initialize Audio object for Arabic & Malayalam studio recitations
   useEffect(() => {
     const audio = new Audio();
     audio.volume = volume;
@@ -73,14 +73,19 @@ export const AudioProvider = ({ children }) => {
     };
 
     const onEnded = () => {
-      if (audioLanguageRef.current === 'ar') {
+      // Audio MP3 ended (Arabic or Malayalam studio audio)
+      if (audioLanguageRef.current === 'ar' || audioLanguageRef.current === 'ml') {
         handleAudioEnded();
       }
     };
 
     const onError = (e) => {
       console.error("Audio element error event:", e);
-      setIsPlaying(false);
+      if (audioLanguageRef.current === 'ml' && currentSurahRef.current && currentAyahIndexRef.current !== -1) {
+        speakTranslation(currentSurahRef.current.ayahs[currentAyahIndexRef.current], 'ml-IN');
+      } else {
+        setIsPlaying(false);
+      }
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -105,7 +110,7 @@ export const AudioProvider = ({ children }) => {
     }
   }, [volume]);
 
-  // Speech synthesis reader for English & Malayalam translations
+  // Speech synthesis reader (used for English & Malayalam fallback)
   const speakTranslation = (ayah, langCode) => {
     stopSpeech();
     
@@ -138,7 +143,6 @@ export const AudioProvider = ({ children }) => {
 
     if (langCode.startsWith('ml')) {
       utterance.lang = 'ml-IN';
-      // Find male Malayalam voice if available
       const mlMaleVoice = voices.find(v => 
         (v.lang.startsWith('ml') || v.name.toLowerCase().includes('malayalam')) &&
         (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('valluvar') || v.name.toLowerCase().includes('man'))
@@ -147,13 +151,10 @@ export const AudioProvider = ({ children }) => {
       if (mlMaleVoice) {
         utterance.voice = mlMaleVoice;
       }
-
-      // Male pitch and steady articulate speed for Malayalam
-      utterance.pitch = 0.82; // Male resonance pitch
-      utterance.rate = 0.80;  // Calm, clear reading pace
+      utterance.pitch = 0.82;
+      utterance.rate = 0.80;
     } else {
       utterance.lang = 'en-US';
-      // Find clear English voice (prefer Male e.g. David/Guy/George)
       const enMaleVoice = voices.find(v => 
         v.lang.startsWith('en') &&
         (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('guy') || v.name.toLowerCase().includes('george'))
@@ -162,9 +163,8 @@ export const AudioProvider = ({ children }) => {
       if (enMaleVoice) {
         utterance.voice = enMaleVoice;
       }
-
       utterance.pitch = 0.92;
-      utterance.rate = 0.82; // Calm, steady reading pace (prevents fast skipping)
+      utterance.rate = 0.82;
     }
 
     utterance.onend = () => {
@@ -207,10 +207,9 @@ export const AudioProvider = ({ children }) => {
       setCurrentAyahIndex(nextIndex);
       currentAyahIndexRef.current = nextIndex;
       
-      // Delay before advancing to next verse for natural speech pause
       setTimeout(() => {
         playAyahByIndex(surah, nextIndex, audioLanguageRef.current);
-      }, 400);
+      }, 350);
     } else {
       setIsPlaying(false);
       setCurrentAyahIndex(-1);
@@ -238,7 +237,27 @@ export const AudioProvider = ({ children }) => {
     }
 
     if (lang === 'ml') {
-      speakTranslation(ayah, 'ml-IN');
+      // Authentic Human Male Studio Audio Recitation (Cheriamundam Abdul Hameed & Parappoor Kunhi Mohammed)
+      const surahPad = String(surah.number).padStart(3, '0');
+      const ayahPad = String(ayah.numberInSurah).padStart(3, '0');
+      const mlAudioUrl = `https://everyayah.com/data/Malayalam_Abdul_Hameed_and_Kunhi_128kbps/${surahPad}${ayahPad}.mp3`;
+
+      if (audioRef.current) {
+        try {
+          audioRef.current.src = mlAudioUrl;
+          audioRef.current.load();
+          audioRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch((e) => {
+              console.warn("EveryAyah Malayalam audio load error, fallback to TTS:", e);
+              speakTranslation(ayah, 'ml-IN');
+            });
+        } catch (e) {
+          speakTranslation(ayah, 'ml-IN');
+        }
+      } else {
+        speakTranslation(ayah, 'ml-IN');
+      }
       return;
     }
 
@@ -284,7 +303,7 @@ export const AudioProvider = ({ children }) => {
     setCurrentSurah(surah);
     setCurrentAyahIndex(index);
     currentSurahRef.current = surah;
-    currentAyahIndexRef.current = startAyahIndex;
+    currentAyahIndexRef.current = index;
     playAyahByIndex(surah, index, lang);
   };
 
@@ -303,7 +322,7 @@ export const AudioProvider = ({ children }) => {
   };
 
   const seek = (time) => {
-    if (audioRef.current && audioLanguage === 'ar') {
+    if (audioRef.current && (audioLanguage === 'ar' || audioLanguage === 'ml')) {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
     }
