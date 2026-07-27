@@ -191,3 +191,42 @@ export const getDailyAyah = async () => {
     };
   }
 };
+
+/**
+ * Fetches all Surahs that contain Ayahs within a given Juz,
+ * slicing each Surah to only include Ayahs belonging to the Juz.
+ *
+ * @param {Object} juz  - A JUZ_DATA entry (startSurahId, startAyah, endSurahId, endAyah)
+ * @param {string} reciter - Reciter identifier
+ * @returns {Array} An array of surah objects with only Juz-scoped ayahs
+ */
+export const getJuzSurahs = async (juz, reciter = 'ar.alafasy') => {
+  const { startSurahId, startAyah, endSurahId, endAyah } = juz;
+
+  // Build list of surah IDs covered by this Juz
+  const surahIds = [];
+  for (let id = startSurahId; id <= endSurahId; id++) {
+    surahIds.push(id);
+  }
+
+  // Fetch all surahs in parallel
+  const surahPromises = surahIds.map((id) => getSurahDetails(id, reciter));
+  const surahs = await Promise.all(surahPromises);
+
+  // Slice each surah to only include ayahs that belong to this Juz
+  return surahs.map((surah) => {
+    let ayahs = surah.ayahs;
+
+    if (surah.number === startSurahId && surah.number === endSurahId) {
+      ayahs = ayahs.filter(
+        (a) => a.numberInSurah >= startAyah && a.numberInSurah <= endAyah
+      );
+    } else if (surah.number === startSurahId) {
+      ayahs = ayahs.filter((a) => a.numberInSurah >= startAyah);
+    } else if (surah.number === endSurahId) {
+      ayahs = ayahs.filter((a) => a.numberInSurah <= endAyah);
+    }
+
+    return { ...surah, ayahs };
+  }).filter((surah) => surah.ayahs.length > 0);
+};
