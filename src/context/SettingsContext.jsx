@@ -5,12 +5,10 @@ const SettingsContext = createContext();
 const DEFAULT_SETTINGS = {
   arabicFontSize: 32, // in px
   translationFontSize: 16, // in px
-  lineHeight: 'comfortable', // 'compact', 'comfortable', 'spacious'
-  defaultLanguage: 'en', // 'en', 'ml', 'both', 'none'
+  defaultLanguage: 'en', // 'en' or 'ml'
   defaultReciter: 'ar.alafasy', // Alafasy
   audioPlaybackMode: 'ayah', // 'ayah' or 'continuous'
   viewMode: 'continuous', // 'continuous' (full text) or 'card' (verse-by-verse)
-  autoScroll: true,
 };
 
 export const SettingsProvider = ({ children }) => {
@@ -55,5 +53,3 @@ export const useSettings = () => {
   }
   return context;
 };
-
-export default SettingsContext;
