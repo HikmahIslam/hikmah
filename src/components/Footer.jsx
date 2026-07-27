@@ -33,7 +33,7 @@ export const Footer = () => {
                 { label: "Qur'an Index", path: "/quran" },
                 { label: "Duas Collection", path: "/duas" },
                 { label: "Dhikr & Tasbeeh", path: "/dhikr" },
-                { label: "Bookmarks", path: "/bookmarks" },
+                { label: "Qibla Finder", path: "/qibla" },
               ].map(({ label, path }) => (
                 <li key={path}>
                   <Link to={path} className="hover:text-brand-emerald-500 transition-colors">

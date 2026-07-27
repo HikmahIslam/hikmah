@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Play, Pause, Bookmark, Copy, Check, Share2 } from 'lucide-react';
+import { Play, Pause, Copy, Check, Share2 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
-import { useBookmarks } from '../context/BookmarksContext';
 import { useSettings } from '../context/SettingsContext';
 
 export const AyahCard = ({ ayah, surah }) => {
   const { playSingleAyah, pauseAudio, isPlaying, currentSurah, currentAyah, audioLanguage } = useAudio();
-  const { toggleBookmark, isBookmarked } = useBookmarks();
   const { settings } = useSettings();
   const [isCopied, setIsCopied] = useState(false);
 
@@ -20,8 +18,6 @@ export const AyahCard = ({ ayah, surah }) => {
   const isArabicActive = isCurrentlyPlaying && audioLanguage === 'ar';
   const isEnglishActive = isCurrentlyPlaying && audioLanguage === 'en';
   const isMalayalamActive = isCurrentlyPlaying && audioLanguage === 'ml';
-
-  const isSaved = isBookmarked(surah.number, numberInSurah);
 
   const handlePlayToggle = () => {
     if (isCurrentlyPlaying) {
@@ -52,18 +48,6 @@ export const AyahCard = ({ ayah, surah }) => {
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => alert("Verse link copied to clipboard!"));
     }
-  };
-
-  const handleBookmarkToggle = () => {
-    toggleBookmark({
-      id: `${surah.number}_${numberInSurah}`,
-      surahNumber: surah.number,
-      ayahNumber: numberInSurah,
-      surahName: surah.name,
-      surahEnglishName: surah.englishName,
-      arabicText: text,
-      translationText: settings.defaultLanguage === 'ml' && mlTranslation ? mlTranslation : enTranslation
-    });
   };
 
   let cleanArabicText = text;
@@ -109,18 +93,6 @@ export const AyahCard = ({ ayah, surah }) => {
             aria-label={isCurrentlyPlaying ? "Pause verse audio" : "Play verse audio"}
           >
             {isCurrentlyPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-          </button>
-
-          <button
-            onClick={handleBookmarkToggle}
-            className={`p-2.5 rounded-xl transition-all duration-200 min-h-[40px] min-w-[40px] flex items-center justify-center ${
-              isSaved
-                ? 'text-brand-emerald-500 hover:bg-brand-emerald-50 dark:hover:bg-brand-emerald-950/20'
-                : 'text-slate-550 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            aria-label={isSaved ? "Remove bookmark" : "Bookmark verse"}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
           </button>
 
           <button

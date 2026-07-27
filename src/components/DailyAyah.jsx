@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getDailyAyah } from '../services/quranApi';
-import { useBookmarks } from '../context/BookmarksContext';
 import { useSettings } from '../context/SettingsContext';
-import { Bookmark, Copy, Check, Sparkles, BookOpen } from 'lucide-react';
+import { Copy, Check, Sparkles, BookOpen } from 'lucide-react';
 
 export const DailyAyah = () => {
-  const { isBookmarked, toggleBookmark } = useBookmarks();
   const { settings } = useSettings();
 
   const [ayah, setAyah] = useState(null);
@@ -47,8 +45,7 @@ export const DailyAyah = () => {
 
   if (!ayah) return null;
 
-  const { number, numberInSurah, text, surah, enTranslation, mlTranslation } = ayah;
-  const isSaved = isBookmarked(surah.number, numberInSurah);
+  const { numberInSurah, text, surah, enTranslation, mlTranslation } = ayah;
   const translationText = settings.defaultLanguage === 'ml' && mlTranslation ? mlTranslation : enTranslation;
 
   const handleCopy = () => {
@@ -56,18 +53,6 @@ export const DailyAyah = () => {
     navigator.clipboard.writeText(copyText).then(() => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    });
-  };
-
-  const handleBookmarkToggle = () => {
-    toggleBookmark({
-      id: `${surah.number}_${numberInSurah}`,
-      surahNumber: surah.number,
-      ayahNumber: numberInSurah,
-      surahName: surah.name,
-      surahEnglishName: surah.englishName,
-      arabicText: text,
-      translationText: translationText
     });
   };
 
@@ -129,18 +114,6 @@ export const DailyAyah = () => {
             aria-label="Copy verse text"
           >
             {isCopied ? <Check className="w-4 h-4 text-brand-emerald-500" /> : <Copy className="w-4 h-4" />}
-          </button>
-          
-          {/* Bookmark Button */}
-          <button
-            onClick={handleBookmarkToggle}
-            className={`p-2.5 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
-              isSaved ? 'text-brand-emerald-500 hover:bg-brand-emerald-50 dark:hover:bg-brand-emerald-950/20' : 'text-slate-450 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-            title="Bookmark verse"
-            aria-label="Bookmark verse"
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
           </button>
         </div>
       </div>

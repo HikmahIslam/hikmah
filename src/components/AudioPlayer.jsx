@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, ChevronUp, ChevronDown, X, Loader2, AlertCircle, Repeat } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, ChevronUp, ChevronDown, X, Loader2, AlertCircle } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useSettings } from '../context/SettingsContext';
 
@@ -27,8 +27,6 @@ export const AudioPlayer = () => {
     isMinimized,
     setIsMinimized,
     audioLanguage,
-    autoPlayNext,
-    setAutoPlayNext,
     pauseAudio,
     resumeAudio,
     seek,
@@ -229,21 +227,6 @@ export const AudioPlayer = () => {
               aria-label="Next Ayah"
             >
               <SkipForward className="w-5 h-5 fill-current" />
-            </button>
-
-            {/* Auto-Next Toggle Button */}
-            <button
-              onClick={() => setAutoPlayNext(!autoPlayNext)}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 min-h-[38px] ${
-                autoPlayNext
-                  ? 'bg-brand-emerald-50 text-brand-emerald-600 dark:bg-brand-emerald-950/40 dark:text-brand-emerald-400 border border-brand-emerald-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-800 opacity-60'
-              }`}
-              title={autoPlayNext ? "Auto-Next: Enabled (will auto-play to end of Surah)" : "Auto-Next: Disabled (will stop after current verse)"}
-              aria-label={autoPlayNext ? "Disable Auto-Next ayah playback" : "Enable Auto-Next ayah playback"}
-            >
-              <Repeat className={`w-3.5 h-3.5 ${autoPlayNext ? 'text-brand-emerald-500' : ''}`} />
-              <span className="text-[10px] hidden sm:inline">{autoPlayNext ? 'Auto Next' : 'Single'}</span>
             </button>
           </div>
 

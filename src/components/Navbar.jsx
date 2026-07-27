@@ -11,7 +11,7 @@ export const Navbar = () => {
     { name: "Qur'an", path: '/quran' },
     { name: 'Duas', path: '/duas' },
     { name: 'Dhikr', path: '/dhikr' },
-    { name: 'Bookmarks', path: '/bookmarks' },
+    { name: 'Qibla', path: '/qibla' },
   ];
 
   const handleMobileClick = () => {
