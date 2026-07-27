@@ -140,104 +140,118 @@ export const SurahDetails = () => {
           </div>
         </div>
 
-        {/* Global Controls */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
-          {/* View Mode Toggle Switch */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+        {/* Global Controls — mobile: two wrapping rows, desktop: single row */}
+        <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:w-auto md:gap-2.5">
+
+          {/* Row 1 on mobile: View Mode + Language toggle side by side */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+              <button
+                onClick={() => updateSetting('viewMode', 'continuous')}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                  currentViewMode === 'continuous'
+                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="Full Text Mushaf View"
+                aria-label="Switch to Full Text view"
+              >
+                <AlignRight className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline sm:inline">Full Text</span>
+              </button>
+              <button
+                onClick={() => updateSetting('viewMode', 'card')}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                  currentViewMode === 'card'
+                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="Verse Cards View"
+                aria-label="Switch to Cards view"
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline sm:inline">Cards</span>
+              </button>
+            </div>
+
+            {/* Translation Language Selector */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
+              <button
+                onClick={() => updateSetting('defaultLanguage', 'en')}
+                className={`px-2 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                  settings.defaultLanguage === 'en'
+                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                aria-label="English translation"
+              >
+                EN
+              </button>
+              <button
+                onClick={() => updateSetting('defaultLanguage', 'ml')}
+                className={`px-2 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                  settings.defaultLanguage === 'ml'
+                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                aria-label="Malayalam translation"
+              >
+                ML
+              </button>
+              <button
+                onClick={() => updateSetting('defaultLanguage', 'both')}
+                className={`px-2 py-1.5 rounded-xl text-xs font-semibold transition-all min-h-[36px] ${
+                  settings.defaultLanguage === 'both'
+                    ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                aria-label="Both English and Malayalam"
+              >
+                Both
+              </button>
+            </div>
+          </div>
+
+          {/* Row 2 on mobile: Listen/Pause button + Settings icon */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Audio Recitation button — full width on mobile */}
             <button
-              onClick={() => updateSetting('viewMode', 'continuous')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                currentViewMode === 'continuous'
-                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              onClick={handlePlaySurah}
+              className={`flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-semibold tracking-wide transition-all duration-300 min-h-[44px] ${
+                isWholeSurahPlaying
+                  ? 'bg-brand-emerald-600 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-700'
+                  : 'bg-brand-emerald-500 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-600'
               }`}
-              title="Full Text Mushaf View"
+              aria-label={isWholeSurahPlaying ? "Pause Surah recitation" : "Listen to Surah recitation"}
             >
-              <AlignRight className="w-4 h-4" />
-              Full Text
+              {isWholeSurahPlaying ? (
+                <>
+                  <Pause className="w-4 h-4 fill-current flex-shrink-0" />
+                  Pause
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current ml-0.5 flex-shrink-0" />
+                  Listen Surah
+                </>
+              )}
             </button>
+
             <button
-              onClick={() => updateSetting('viewMode', 'card')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                currentViewMode === 'card'
-                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              onClick={() => setShowQuickSettings(!showQuickSettings)}
+              className={`p-2.5 rounded-2xl border transition-all flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                showQuickSettings
+                  ? 'border-brand-emerald-500 bg-brand-emerald-50/20 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400'
+                  : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-550 dark:text-slate-450'
               }`}
-              title="Verse Cards View"
+              title="Reading Settings"
+              aria-label="Toggle Reading settings toolbar"
             >
-              <LayoutList className="w-4 h-4" />
-              Cards
+              <Settings2 className="w-4.5 h-4.5" />
             </button>
           </div>
 
-          {/* Translation Language Selector Pill */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-            <button
-              onClick={() => updateSetting('defaultLanguage', 'en')}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                settings.defaultLanguage === 'en'
-                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => updateSetting('defaultLanguage', 'ml')}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                settings.defaultLanguage === 'ml'
-                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              മലയാളം
-            </button>
-            <button
-              onClick={() => updateSetting('defaultLanguage', 'both')}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                settings.defaultLanguage === 'both'
-                  ? 'bg-white dark:bg-slate-800 text-brand-emerald-600 dark:text-brand-emerald-400 shadow-sm font-bold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              Both
-            </button>
-          </div>
-
-          {/* Audio Recitation button */}
-          <button
-            onClick={handlePlaySurah}
-            className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-semibold tracking-wide transition-all duration-300 ${
-              isWholeSurahPlaying
-                ? 'bg-brand-emerald-600 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-700'
-                : 'bg-brand-emerald-500 text-white shadow-md shadow-brand-emerald-500/15 hover:bg-brand-emerald-600'
-            }`}
-          >
-            {isWholeSurahPlaying ? (
-              <>
-                <Pause className="w-4 h-4 fill-current" />
-                Pause
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-                Listen Surah
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowQuickSettings(!showQuickSettings)}
-            className={`p-2.5 rounded-2xl border transition-all ${
-              showQuickSettings
-                ? 'border-brand-emerald-500 bg-brand-emerald-50/20 text-brand-emerald-600 dark:bg-brand-emerald-950/20 dark:text-brand-emerald-400'
-                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-550 dark:text-slate-450'
-            }`}
-            title="Reading Settings"
-            aria-label="Toggle Reading settings toolbar"
-          >
-            <Settings2 className="w-4.5 h-4.5" />
-          </button>
         </div>
       </div>
 
