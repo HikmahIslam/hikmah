@@ -3,107 +3,98 @@ import { useSettings } from './SettingsContext';
 
 const AudioContext = createContext();
 
-// ─── Microsoft Edge Neural TTS helpers ────────────────────────────────────────
-// Calls /api/speak (Vercel serverless → msedge-tts → Microsoft neural voices)
-// Voices:  ml-IN-MidhunNeural (natural male Kerala Malayalam)
-//          en-US-GuyNeural    (natural male US English)
-
-const CHUNK_MAX = 280; // safe URL-encoded limit for query param
-
-const splitAtWordBoundary = (text, maxLen) => {
-  if (text.length <= maxLen) return [text];
-  const chunks = [];
-  let remaining = text.trim();
-  while (remaining.length > maxLen) {
-    let cut = remaining.lastIndexOf(' ', maxLen);
-    if (cut <= 0) cut = maxLen;
-    chunks.push(remaining.slice(0, cut).trim());
-    remaining = remaining.slice(cut).trim();
-  }
-  if (remaining) chunks.push(remaining);
-  return chunks;
+// ─── Hugging Face MMS-TTS (Meta's Massively Multilingual Speech) ─────────────
+// Direct browser call — no server needed, CORS supported, free, no API key
+// ml: facebook/mms-tts-mal  → natural Malayalam neural TTS (different from Google)
+// en: facebook/mms-tts-eng  → natural English neural TTS
+const HF_BASE = 'https://api-inference.huggingface.co/models';
+const TTS_MODELS = {
+  ml: `${HF_BASE}/facebook/mms-tts-mal`,
+  en: `${HF_BASE}/facebook/mms-tts-eng`,
 };
-
-const buildTTSUrl = (text, lang) =>
-  `/api/speak?lang=${lang}&text=${encodeURIComponent(text)}`;
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const AudioProvider = ({ children }) => {
   const { settings } = useSettings();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSurah, setCurrentSurah] = useState(null);
+  const [isPlaying, setIsPlaying]               = useState(false);
+  const [currentSurah, setCurrentSurah]         = useState(null);
   const [currentAyahIndex, setCurrentAyahIndex] = useState(-1);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [audioLanguage, setAudioLanguage] = useState('ar'); // 'ar' | 'en' | 'ml'
+  const [currentTime, setCurrentTime]           = useState(0);
+  const [duration, setDuration]                 = useState(0);
+  const [volume, setVolume]                     = useState(0.8);
+  const [isMinimized, setIsMinimized]           = useState(false);
+  const [audioLanguage, setAudioLanguage]       = useState('ar');
+  const [isTTSLoading, setIsTTSLoading]         = useState(false); // HF model warm-up
 
-  const audioRef = useRef(null);
-  const chunkQueueRef = useRef([]); // remaining TTS chunks for current ayah
-  const speechTrackerRef = useRef({ cancelled: false });
+  const audioRef          = useRef(null);
+  const blobUrlRef        = useRef(null); // track blob URLs for cleanup
+  const speechTrackerRef  = useRef({ cancelled: false });
+  const abortControllerRef= useRef(null); // for cancelling in-flight HF requests
 
-  // Closure-safe refs for event listeners
-  const currentSurahRef = useRef(null);
+  // Closure-safe refs
+  const currentSurahRef     = useRef(null);
   const currentAyahIndexRef = useRef(-1);
-  const audioLanguageRef = useRef('ar');
+  const audioLanguageRef    = useRef('ar');
 
-  useEffect(() => { currentSurahRef.current = currentSurah; }, [currentSurah]);
+  useEffect(() => { currentSurahRef.current     = currentSurah; },     [currentSurah]);
   useEffect(() => { currentAyahIndexRef.current = currentAyahIndex; }, [currentAyahIndex]);
-  useEffect(() => { audioLanguageRef.current = audioLanguage; }, [audioLanguage]);
+  useEffect(() => { audioLanguageRef.current    = audioLanguage; },    [audioLanguage]);
 
-  // Stop any active Web Speech synthesis
-  const stopSpeech = () => {
-    speechTrackerRef.current.cancelled = true;
+  // Pre-load Web Speech voices (fallback)
+  useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }, []);
+
+  const revokeBlobUrl = () => {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
     }
   };
 
-  // ─── Audio element setup ───────────────────────────────────────────────────
+  const cancelHFRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopSpeech = () => {
+    speechTrackerRef.current.cancelled = true;
+    cancelHFRequest();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsTTSLoading(false);
+  };
+
+  // ─── Audio element ──────────────────────────────────────────────────────────
   useEffect(() => {
     const audio = new Audio();
     audio.volume = volume;
     audioRef.current = audio;
 
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration);
+    const onTimeUpdate    = () => setCurrentTime(audio.currentTime);
+    const onLoadedMeta    = () => setDuration(audio.duration);
+    const onEnded         = () => { revokeBlobUrl(); handleAudioEnded(); };
+    const onError         = () => { revokeBlobUrl(); setIsPlaying(false); setIsTTSLoading(false); };
 
-    const onEnded = () => {
-      const lang = audioLanguageRef.current;
-
-      // If more TTS chunks remain for this ayah, play next chunk
-      if ((lang === 'ml' || lang === 'en') && chunkQueueRef.current.length > 0) {
-        const nextChunk = chunkQueueRef.current.shift();
-        const url = buildTTSUrl(nextChunk, lang);
-        audio.src = url;
-        audio.load();
-        audio.play().catch(() => handleAudioEnded());
-        return;
-      }
-
-      handleAudioEnded();
-    };
-
-    const onError = () => {
-      // TTS API unavailable — do NOT cascade error into auto-play loop
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('error', onError);
+    audio.addEventListener('timeupdate',    onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onLoadedMeta);
+    audio.addEventListener('ended',         onEnded);
+    audio.addEventListener('error',         onError);
 
     return () => {
       stopSpeech();
-      chunkQueueRef.current = [];
+      revokeBlobUrl();
       audio.pause();
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-      audio.removeEventListener('ended', onEnded);
-      audio.removeEventListener('error', onError);
+      audio.removeEventListener('timeupdate',     onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onLoadedMeta);
+      audio.removeEventListener('ended',          onEnded);
+      audio.removeEventListener('error',          onError);
     };
   }, []);
 
@@ -111,11 +102,10 @@ export const AudioProvider = ({ children }) => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // ─── Advance to next ayah ──────────────────────────────────────────────────
+  // ─── Advance to next ayah ───────────────────────────────────────────────────
   const handleAudioEnded = () => {
     const surah = currentSurahRef.current;
-    const idx = currentAyahIndexRef.current;
-
+    const idx   = currentAyahIndexRef.current;
     if (!surah || idx === -1) { setIsPlaying(false); return; }
 
     const nextIdx = idx + 1;
@@ -130,8 +120,8 @@ export const AudioProvider = ({ children }) => {
     }
   };
 
-  // ─── Play translation via Microsoft Edge Neural TTS (/api/speak) ───────────
-  const speakViaEdgeTTS = (ayah, lang) => {
+  // ─── HuggingFace MMS-TTS (primary: natural neural voice) ────────────────────
+  const speakViaMMS = async (ayah, lang) => {
     if (!audioRef.current) { setIsPlaying(false); return; }
 
     const rawText = lang === 'ml'
@@ -142,27 +132,64 @@ export const AudioProvider = ({ children }) => {
       .replace(/\[\d+\]/g, '')
       .replace(/\(\d+\)/g, '')
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim()
+      .slice(0, 300); // HF free-tier safe limit
 
     if (!cleanedText) { handleAudioEnded(); return; }
 
-    const chunks = splitAtWordBoundary(cleanedText, CHUNK_MAX);
-    chunkQueueRef.current = chunks.slice(1); // queue chunks after the first
+    const modelUrl = TTS_MODELS[lang] || TTS_MODELS.en;
 
-    const firstUrl = buildTTSUrl(chunks[0], lang);
-    audioRef.current.src = firstUrl;
-    audioRef.current.load();
-    audioRef.current.play()
-      .then(() => setIsPlaying(true))
-      .catch(() => {
-        // /api/speak not available in local dev without vite-plugin-api or vercel dev
-        // Fall back to best available Web Speech voice
-        chunkQueueRef.current = [];
-        speakWithWebSpeech(cleanedText, lang);
+    setIsTTSLoading(true);
+    cancelHFRequest();
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch(modelUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: cleanedText }),
+        signal: abortControllerRef.current.signal,
       });
+
+      if (speechTrackerRef.current.cancelled) return;
+      setIsTTSLoading(false);
+
+      if (response.status === 503) {
+        // Model is loading (cold start) — fall back immediately, don't wait
+        console.info('[MMS-TTS] Model loading (503), using Web Speech fallback');
+        speakWithWebSpeech(cleanedText, lang);
+        return;
+      }
+
+      if (!response.ok) throw new Error(`HF error ${response.status}`);
+
+      const blob    = await response.blob();
+      if (speechTrackerRef.current.cancelled) return;
+
+      revokeBlobUrl(); // clean up any previous blob
+      const blobUrl = URL.createObjectURL(blob);
+      blobUrlRef.current = blobUrl;
+
+      audioRef.current.src = blobUrl;
+      audioRef.current.load();
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          revokeBlobUrl();
+          speakWithWebSpeech(cleanedText, lang);
+        });
+
+    } catch (err) {
+      if (err.name === 'AbortError') return; // intentional cancel
+      setIsTTSLoading(false);
+      console.warn('[MMS-TTS] Failed:', err.message);
+      if (!speechTrackerRef.current.cancelled) {
+        speakWithWebSpeech(cleanedText, lang);
+      }
+    }
   };
 
-  // ─── Web Speech API fallback (dev environment / offline) ──────────────────
+  // ─── Web Speech API (fallback when HF is unavailable / offline) ────────────
   const speakWithWebSpeech = (text, lang) => {
     stopSpeech();
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -172,77 +199,78 @@ export const AudioProvider = ({ children }) => {
     speechTrackerRef.current.cancelled = false;
 
     const voices = window.speechSynthesis.getVoices();
-    let selectedVoice;
+    let voice;
 
     if (lang === 'ml') {
-      selectedVoice =
+      voice =
         voices.find(v => v.name.includes('Midhun')) ||
         voices.find(v => v.name.includes('Microsoft') && v.lang === 'ml-IN') ||
         voices.find(v => v.lang === 'ml-IN') ||
         voices.find(v => v.lang.startsWith('ml'));
     } else {
-      selectedVoice =
+      voice =
         voices.find(v => v.name.toLowerCase().includes('david')) ||
         voices.find(v => v.name.toLowerCase().includes('guy')) ||
         voices.find(v => v.lang === 'en-US') ||
         voices.find(v => v.lang.startsWith('en'));
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'ml' ? 'ml-IN' : 'en-US';
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.pitch = lang === 'ml' ? 0.85 : 0.92;
-    utterance.rate = lang === 'ml' ? 0.78 : 0.82;
-    utterance.volume = 1.0;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang   = lang === 'ml' ? 'ml-IN' : 'en-US';
+    if (voice) utt.voice = voice;
+    utt.pitch  = lang === 'ml' ? 0.85 : 0.92;
+    utt.rate   = lang === 'ml' ? 0.78 : 0.82;
+    utt.volume = 1.0;
 
-    utterance.onend = () => { if (!speechTrackerRef.current.cancelled) handleAudioEnded(); };
-    utterance.onerror = (err) => {
-      if (err.error === 'interrupted' || err.error === 'canceled') return;
+    utt.onend  = () => { if (!speechTrackerRef.current.cancelled) handleAudioEnded(); };
+    utt.onerror= (e) => {
+      if (e.error === 'interrupted' || e.error === 'canceled') return;
       if (!speechTrackerRef.current.cancelled) handleAudioEnded();
     };
 
     try {
       window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utt);
       setIsPlaying(true);
 
-      const keepAlive = setInterval(() => {
+      // Chrome keep-alive
+      const ka = setInterval(() => {
         if (speechTrackerRef.current.cancelled || !window.speechSynthesis.speaking) {
-          clearInterval(keepAlive);
+          clearInterval(ka);
         } else {
           window.speechSynthesis.pause();
           window.speechSynthesis.resume();
         }
       }, 10000);
-    } catch {
-      setIsPlaying(false);
-    }
+    } catch { setIsPlaying(false); }
   };
 
-  // ─── Core play function ────────────────────────────────────────────────────
+  // ─── Core play function ─────────────────────────────────────────────────────
   const playAyahByIndex = (surah, index, lang = audioLanguageRef.current) => {
     if (!surah || index < 0 || index >= surah.ayahs.length) return;
 
     stopSpeech();
-    chunkQueueRef.current = [];
+    revokeBlobUrl();
     if (audioRef.current) audioRef.current.pause();
 
     const ayah = surah.ayahs[index];
-    currentSurahRef.current = surah;
+    currentSurahRef.current     = surah;
     currentAyahIndexRef.current = index;
+    speechTrackerRef.current    = { cancelled: false };
 
     const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Malayalam & English → Microsoft Edge Neural TTS (/api/speak)
+    // ML & EN → HuggingFace MMS-TTS neural voice
     if (lang === 'ml' || lang === 'en') {
-      speakViaEdgeTTS(ayah, lang);
+      speakViaMMS(ayah, lang);
       return;
     }
 
     // Arabic → studio MP3
-    const reciter = settings.defaultReciter || 'ar.alafasy';
-    const audioUrl = ayah.audio || `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayah.number}.mp3`;
+    const reciter  = settings.defaultReciter || 'ar.alafasy';
+    const audioUrl = ayah.audio ||
+      `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayah.number}.mp3`;
 
     if (audioRef.current) {
       try {
@@ -251,20 +279,18 @@ export const AudioProvider = ({ children }) => {
         audioRef.current.play()
           .then(() => setIsPlaying(true))
           .catch(() => setIsPlaying(false));
-      } catch {
-        setIsPlaying(false);
-      }
+      } catch { setIsPlaying(false); }
     }
   };
 
-  const playSurah = (surah, startAyahIndex = 0, lang = audioLanguage) => {
+  const playSurah = (surah, startIndex = 0, lang = audioLanguage) => {
     setAudioLanguage(lang);
     audioLanguageRef.current = lang;
     setCurrentSurah(surah);
-    setCurrentAyahIndex(startAyahIndex);
-    currentSurahRef.current = surah;
-    currentAyahIndexRef.current = startAyahIndex;
-    playAyahByIndex(surah, startAyahIndex, lang);
+    setCurrentAyahIndex(startIndex);
+    currentSurahRef.current     = surah;
+    currentAyahIndexRef.current = startIndex;
+    playAyahByIndex(surah, startIndex, lang);
   };
 
   const playSingleAyah = (surah, index, lang = audioLanguage) => {
@@ -272,14 +298,13 @@ export const AudioProvider = ({ children }) => {
     audioLanguageRef.current = lang;
     setCurrentSurah(surah);
     setCurrentAyahIndex(index);
-    currentSurahRef.current = surah;
+    currentSurahRef.current     = surah;
     currentAyahIndexRef.current = index;
     playAyahByIndex(surah, index, lang);
   };
 
   const pauseAudio = () => {
     stopSpeech();
-    chunkQueueRef.current = [];
     if (audioRef.current) audioRef.current.pause();
     setIsPlaying(false);
   };
@@ -299,27 +324,27 @@ export const AudioProvider = ({ children }) => {
 
   const nextAyah = () => {
     if (!currentSurah || currentAyahIndex === -1) return;
-    const nextIdx = currentAyahIndex + 1;
-    if (nextIdx < currentSurah.ayahs.length) {
-      setCurrentAyahIndex(nextIdx);
-      currentAyahIndexRef.current = nextIdx;
-      playAyahByIndex(currentSurah, nextIdx, audioLanguage);
+    const n = currentAyahIndex + 1;
+    if (n < currentSurah.ayahs.length) {
+      setCurrentAyahIndex(n);
+      currentAyahIndexRef.current = n;
+      playAyahByIndex(currentSurah, n, audioLanguage);
     }
   };
 
   const prevAyah = () => {
     if (!currentSurah || currentAyahIndex === -1) return;
-    const prevIdx = currentAyahIndex - 1;
-    if (prevIdx >= 0) {
-      setCurrentAyahIndex(prevIdx);
-      currentAyahIndexRef.current = prevIdx;
-      playAyahByIndex(currentSurah, prevIdx, audioLanguage);
+    const p = currentAyahIndex - 1;
+    if (p >= 0) {
+      setCurrentAyahIndex(p);
+      currentAyahIndexRef.current = p;
+      playAyahByIndex(currentSurah, p, audioLanguage);
     }
   };
 
   const stopAudio = () => {
     stopSpeech();
-    chunkQueueRef.current = [];
+    revokeBlobUrl();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -327,7 +352,7 @@ export const AudioProvider = ({ children }) => {
     setIsPlaying(false);
     setCurrentSurah(null);
     setCurrentAyahIndex(-1);
-    currentSurahRef.current = null;
+    currentSurahRef.current     = null;
     currentAyahIndexRef.current = -1;
     setCurrentTime(0);
   };
@@ -337,30 +362,29 @@ export const AudioProvider = ({ children }) => {
     : null;
 
   return (
-    <AudioContext.Provider
-      value={{
-        isPlaying,
-        currentSurah,
-        currentAyahIndex,
-        currentAyah,
-        currentTime,
-        duration,
-        volume,
-        setVolume,
-        isMinimized,
-        setIsMinimized,
-        audioLanguage,
-        setAudioLanguage,
-        playSurah,
-        playSingleAyah,
-        pauseAudio,
-        resumeAudio,
-        seek,
-        nextAyah,
-        prevAyah,
-        stopAudio,
-      }}
-    >
+    <AudioContext.Provider value={{
+      isPlaying,
+      isTTSLoading,
+      currentSurah,
+      currentAyahIndex,
+      currentAyah,
+      currentTime,
+      duration,
+      volume,
+      setVolume,
+      isMinimized,
+      setIsMinimized,
+      audioLanguage,
+      setAudioLanguage,
+      playSurah,
+      playSingleAyah,
+      pauseAudio,
+      resumeAudio,
+      seek,
+      nextAyah,
+      prevAyah,
+      stopAudio,
+    }}>
       {children}
     </AudioContext.Provider>
   );
