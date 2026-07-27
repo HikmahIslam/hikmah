@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-arabic: 'Amiri', 'Scheherazade New', 'Traditional Arabic', serif;
+
+  --color-brand-emerald-50: #f0fdf4;
+  --color-brand-emerald-100: #dcfce7;
+  --color-brand-emerald-200: #bbf7d0;
+  --color-brand-emerald-500: #10b981;
+  --color-brand-emerald-600: #059669;
+  --color-brand-emerald-700: #047857;
+  --color-brand-emerald-800: #065f46;
+  --color-brand-emerald-900: #064e3b;
+  --color-brand-emerald-950: #022c22;
+
+  --color-brand-gold-50: #fffbeb;
+  --color-brand-gold-100: #fef3c7;
+  --color-brand-gold-400: #fbbf24;
+  --color-brand-gold-500: #f59e0b;
+  --color-brand-gold-600: #d97706;
+  --color-brand-gold-700: #b45309;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-subtle: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Base Body Styles */
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth custom styles for spiritual reading */
+.arabic-text {
+  font-family: var(--font-arabic);
+  direction: rtl;
+  line-height: 2.2;
+}
+
+/* Islamic Geometric Background elements */
+.islamic-pattern {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+                    radial-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.dark .islamic-pattern {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                    radial-gradient(rgba(245, 158, 11, 0.02) 1px, transparent 1px);
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-panel {
+  background-color: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
