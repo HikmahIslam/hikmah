@@ -14,6 +14,18 @@ export const AudioProvider = ({ children }) => {
   const [isMinimized, setIsMinimized] = useState(false);
 
   const audioRef = useRef(null);
+  
+  // Refs for tracking state inside audio event listeners without closure staleness
+  const currentSurahRef = useRef(currentSurah);
+  const currentAyahIndexRef = useRef(currentAyahIndex);
+
+  useEffect(() => {
+    currentSurahRef.current = currentSurah;
+  }, [currentSurah]);
+
+  useEffect(() => {
+    currentAyahIndexRef.current = currentAyahIndex;
+  }, [currentAyahIndex]);
 
   // Initialize Audio object
   useEffect(() => {
@@ -30,11 +42,11 @@ export const AudioProvider = ({ children }) => {
     };
 
     const onEnded = () => {
-      setIsPlaying(false);
       handleAudioEnded();
     };
 
-    const onError = () => {
+    const onError = (e) => {
+      console.error("Audio playback error event:", e);
       setIsPlaying(false);
     };
 
@@ -59,39 +71,47 @@ export const AudioProvider = ({ children }) => {
     }
   }, [volume]);
 
-  // Audio completion behavior
+  // Continuous playback when audio ends
   const handleAudioEnded = () => {
-    // We need to use state ref or function style to get the latest index and surah
-    setCurrentAyahIndex((prevIndex) => {
-      if (prevIndex === -1 || !currentSurah) return -1;
+    const surah = currentSurahRef.current;
+    const currentIndex = currentAyahIndexRef.current;
+
+    if (!surah || currentIndex === -1) {
+      setIsPlaying(false);
+      return;
+    }
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < surah.ayahs.length) {
+      // Auto advance to next Ayah
+      setCurrentAyahIndex(nextIndex);
+      currentAyahIndexRef.current = nextIndex;
       
-      const nextIndex = prevIndex + 1;
-      if (nextIndex < currentSurah.ayahs.length) {
-        // Continuous playback
-        setTimeout(() => {
-          playAyahByIndex(currentSurah, nextIndex);
-        }, 800); // Small peaceful pause between Ayahs
-        return nextIndex;
-      }
-      
-      // Finished Surah
-      return -1;
-    });
+      // Small graceful pause before starting next verse
+      setTimeout(() => {
+        playAyahByIndex(surah, nextIndex);
+      }, 300);
+    } else {
+      // Reached end of Surah
+      setIsPlaying(false);
+      setCurrentAyahIndex(-1);
+      currentAyahIndexRef.current = -1;
+    }
   };
 
   const playAyahByIndex = (surah, index) => {
     if (!audioRef.current || !surah || index < 0 || index >= surah.ayahs.length) return;
 
     const ayah = surah.ayahs[index];
-    
-    // Alquran.cloud audio source can be inside the ayah object
-    // Depending on the api request, it will have a URL or we construct it.
-    // E.g., if there's ayah.audio, use it. Otherwise construct default Alafasy url.
-    let audioUrl = ayah.audio;
-    if (!audioUrl) {
-      // Fallback url
-      // The overall ayah number in the Quran is ayah.number
-      audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${ayah.number}.mp3`;
+    let audioUrl = ayah.audio || `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${ayah.number}.mp3`;
+
+    currentSurahRef.current = surah;
+    currentAyahIndexRef.current = index;
+
+    // Scroll active Ayah into view if visible on screen
+    const el = document.getElementById(`ayah-${ayah.numberInSurah}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     try {
@@ -107,20 +127,23 @@ export const AudioProvider = ({ children }) => {
         });
     } catch (error) {
       console.error(error);
+      setIsPlaying(false);
     }
   };
 
   const playSurah = (surah, startAyahIndex = 0) => {
     setCurrentSurah(surah);
     setCurrentAyahIndex(startAyahIndex);
+    currentSurahRef.current = surah;
+    currentAyahIndexRef.current = startAyahIndex;
     playAyahByIndex(surah, startAyahIndex);
   };
 
   const playSingleAyah = (surah, index) => {
-    // Stop continuous by setting surah but with limited array, or just playing it
-    // If user plays single, we set currentSurah and currentAyahIndex, but when it ends it might trigger continuous if they have it.
     setCurrentSurah(surah);
     setCurrentAyahIndex(index);
+    currentSurahRef.current = surah;
+    currentAyahIndexRef.current = index;
     playAyahByIndex(surah, index);
   };
 
@@ -155,6 +178,7 @@ export const AudioProvider = ({ children }) => {
     const nextIndex = currentAyahIndex + 1;
     if (nextIndex < currentSurah.ayahs.length) {
       setCurrentAyahIndex(nextIndex);
+      currentAyahIndexRef.current = nextIndex;
       playAyahByIndex(currentSurah, nextIndex);
     }
   };
@@ -164,6 +188,7 @@ export const AudioProvider = ({ children }) => {
     const prevIndex = currentAyahIndex - 1;
     if (prevIndex >= 0) {
       setCurrentAyahIndex(prevIndex);
+      currentAyahIndexRef.current = prevIndex;
       playAyahByIndex(currentSurah, prevIndex);
     }
   };
@@ -176,6 +201,8 @@ export const AudioProvider = ({ children }) => {
     setIsPlaying(false);
     setCurrentSurah(null);
     setCurrentAyahIndex(-1);
+    currentSurahRef.current = null;
+    currentAyahIndexRef.current = -1;
     setCurrentTime(0);
   };
 
