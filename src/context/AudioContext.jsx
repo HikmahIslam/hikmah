@@ -47,7 +47,7 @@ export const AudioProvider = ({ children }) => {
   const [audioLanguage, setAudioLanguage]       = useState('ar');
   const [isTTSLoading, setIsTTSLoading]         = useState(false);
   const [ttsLoadingMessage, setTTSLoadingMessage]= useState('');
-  const [ttsError, setTTSError]                 = useState(null);
+  const [autoPlayNext, setAutoPlayNext]         = useState(true);
 
   const audioRef           = useRef(null);
   const activeBlobUrlsRef  = useRef(new Set()); // track Object URLs for cleanup
@@ -58,10 +58,12 @@ export const AudioProvider = ({ children }) => {
   const currentSurahRef     = useRef(null);
   const currentAyahIndexRef = useRef(-1);
   const audioLanguageRef    = useRef('ar');
+  const autoPlayNextRef     = useRef(autoPlayNext);
 
   useEffect(() => { currentSurahRef.current     = currentSurah; },     [currentSurah]);
   useEffect(() => { currentAyahIndexRef.current = currentAyahIndex; }, [currentAyahIndex]);
   useEffect(() => { audioLanguageRef.current    = audioLanguage; },    [audioLanguage]);
+  useEffect(() => { autoPlayNextRef.current     = autoPlayNext; },     [autoPlayNext]);
 
   const cleanupActiveBlobUrls = () => {
     activeBlobUrlsRef.current.forEach((url) => {
@@ -141,6 +143,12 @@ export const AudioProvider = ({ children }) => {
     const surah = currentSurahRef.current;
     const idx   = currentAyahIndexRef.current;
     if (!surah || idx === -1) { setIsPlaying(false); return; }
+
+    // If Auto-Play Next is disabled, stop playback right here
+    if (!autoPlayNextRef.current) {
+      setIsPlaying(false);
+      return;
+    }
 
     const nextIdx = idx + 1;
     if (nextIdx < surah.ayahs.length) {
@@ -437,6 +445,8 @@ export const AudioProvider = ({ children }) => {
       setIsMinimized,
       audioLanguage,
       setAudioLanguage,
+      autoPlayNext,
+      setAutoPlayNext,
       playSurah,
       playSingleAyah,
       pauseAudio,
