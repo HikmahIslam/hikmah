@@ -7,6 +7,7 @@ export const TRANSLATIONS = {
     dhikr: "Dhikr",
     qibla: "Qibla",
     settings: "Settings",
+    asmaulHusna: "Asmaul Husna",
 
     // Home / Hero
     heroTitle: "The Holy Qur'an & Sunnah",
@@ -22,6 +23,13 @@ export const TRANSLATIONS = {
     dailyAyah: "Daily Ayah",
     continueReading: "Continue Reading",
     
+    // Asmaul Husna Banner & Page
+    asmaulHusnaSub: "99 Beautiful Names of Allah with meanings & audio",
+    playAll99: "Play All 99 Names",
+    pause: "Pause Recitation",
+    searchAsmaulHusnaPlaceholder: "Search by number, name, English or Malayalam meaning...",
+    bothTranslations: "Both",
+
     // Quran Page
     quranHeaderTitle: "The Holy Qur'an",
     quranHeaderSub: "Explore all 114 Surahs with audio recitations and multi-language translations",
@@ -103,6 +111,7 @@ export const TRANSLATIONS = {
     dhikr: "الأذكار",
     qibla: "القبلة",
     settings: "الإعدادات",
+    asmaulHusna: "أسماء الله الحسنى",
 
     // Home / Hero
     heroTitle: "القرآن الكريم والسنة النبوية",
@@ -117,6 +126,13 @@ export const TRANSLATIONS = {
     viewAll114: "عرض جميع السور (١١٤) ←",
     dailyAyah: "آية اليوم",
     continueReading: "متابعة القراءة",
+
+    // Asmaul Husna Banner & Page
+    asmaulHusnaSub: "أسماء الله الحسنى الـ ٩٩ مع المعاني والتلاوة الصوتية",
+    playAll99: "تشغيل جميع الأسماء ٩٩",
+    pause: "إيقاف مؤقت",
+    searchAsmaulHusnaPlaceholder: "ابحث بالرقم أو الاسم أو المعنى...",
+    bothTranslations: "كلاهما",
 
     // Quran Page
     quranHeaderTitle: "القرآن الكريم",
@@ -199,6 +215,7 @@ export const TRANSLATIONS = {
     dhikr: "ദിക്കറുകൾ",
     qibla: "ഖിബ്‌ല",
     settings: "സെറ്റിംഗ്സ്",
+    asmaulHusna: "അസ്മാഉൽ ഹുസ്നാ",
 
     // Home / Hero
     heroTitle: "വിശുദ്ധ ഖുർആനും സുന്നത്തും",
@@ -213,6 +230,13 @@ export const TRANSLATIONS = {
     viewAll114: "എല്ലാ 114 സൂറത്തുകളും കാണുക →",
     dailyAyah: "ഇന്നത്തെ ആയത്ത്",
     continueReading: "വായന തുടരുക",
+
+    // Asmaul Husna Banner & Page
+    asmaulHusnaSub: "അല്ലാഹുവിന്റെ 99 തിരുനാമങ്ങളും അർത്ഥവും ഓഡിയോയും",
+    playAll99: "99 നാമങ്ങളും കേൾക്കുക",
+    pause: "നിർത്തുക",
+    searchAsmaulHusnaPlaceholder: "നമ്പർ, നാമം അല്ലെങ്കിൽ അർത്ഥം തിരയുക...",
+    bothTranslations: "രണ്ടും",
 
     // Quran Page
     quranHeaderTitle: "വിശുദ്ധ ഖുർആൻ",

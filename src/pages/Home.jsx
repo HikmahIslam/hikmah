@@ -4,7 +4,7 @@ import Hero from '../components/Hero';
 import DailyAyah from '../components/DailyAyah';
 import ContinueReading from '../components/ContinueReading';
 import SurahCard from '../components/SurahCard';
-import { BookOpen, Headphones, Compass, Heart, Flame } from 'lucide-react';
+import { BookOpen, Headphones, Compass, Heart, Flame, Sparkles, ChevronRight } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 const POPULAR_SURAHS = [
@@ -68,6 +68,36 @@ export const Home = () => {
           })}
         </div>
       </div>
+
+      {/* Asmaul Husna Banner Card under Quick Access */}
+      <Link
+        to="/asmaul-husna"
+        className="block bg-gradient-to-br from-emerald-800 via-emerald-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-xl shadow-emerald-900/20 border border-amber-400/40 hover:border-amber-400 transition-all duration-300 group hover:scale-[1.01]"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            {/* Arabic Emblem Badge */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400/15 border border-amber-400/50 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+              <span className="arabic-text font-bold text-xl sm:text-2xl text-amber-300">
+                اللَّه
+              </span>
+            </div>
+            {/* Title & Subtitle */}
+            <div className="min-w-0 space-y-0.5">
+              <h3 className="font-calligraphic font-bold text-lg sm:text-xl text-white group-hover:text-amber-300 transition-colors">
+                {t('asmaulHusna')}
+              </h3>
+              <p className="text-xs text-emerald-100/75 truncate">
+                {t('asmaulHusnaSub')}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform flex-shrink-0">
+            <Sparkles className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+          </div>
+        </div>
+      </Link>
 
       {/* Popular Surahs section */}
       <div className="space-y-3.5 sm:space-y-4">

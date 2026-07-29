@@ -15,6 +15,7 @@ import JuzReader from './pages/JuzReader';
 import Qibla from './pages/Qibla';
 import Duas from './pages/Duas';
 import Dhikr from './pages/Dhikr';
+import AsmaulHusna from './pages/AsmaulHusna';
 import Settings from './pages/Settings';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/qibla" element={<Qibla />} />
                 <Route path="/duas" element={<Duas />} />
                 <Route path="/dhikr" element={<Dhikr />} />
+                <Route path="/asmaul-husna" element={<AsmaulHusna />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>
             </MainLayout>

@@ -15,6 +15,7 @@ export const Navbar = () => {
     { name: t('duas'), path: '/duas' },
     { name: t('dhikr'), path: '/dhikr' },
     { name: t('qibla'), path: '/qibla' },
+    { name: t('asmaulHusna'), path: '/asmaul-husna' },
   ];
 
   const handleMobileClick = () => {
