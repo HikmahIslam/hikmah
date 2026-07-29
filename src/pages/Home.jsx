@@ -5,7 +5,11 @@ import DailyAyah from '../components/DailyAyah';
 import ContinueReading from '../components/ContinueReading';
 import SurahCard from '../components/SurahCard';
 import QuranRadioCard from '../components/QuranRadioCard';
-import { BookOpen, Headphones, Compass, Heart, Flame, Sparkles, ChevronRight } from 'lucide-react';
+import QuranBookIcon from '../components/QuranBookIcon';
+import DuaHandsIcon from '../components/DuaHandsIcon';
+import DhikrTasbeehIcon from '../components/DhikrTasbeehIcon';
+import KaabaIcon from '../components/KaabaIcon';
+import { Headphones, Sparkles, ChevronRight } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 const POPULAR_SURAHS = [
@@ -21,11 +25,11 @@ export const Home = () => {
   const { t } = useSettings();
 
   const quickAccessItems = [
-    { name: t('readQuran'), path: "/quran", icon: BookOpen, color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" },
+    { name: t('readQuran'), path: "/quran", icon: QuranBookIcon, color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" },
     { name: t('listenNow'), path: "/quran", icon: Headphones, color: "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400" },
-    { name: t('qiblaFinder'), path: "/qibla", icon: Compass, color: "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400" },
-    { name: t('duasCollection'), path: "/duas", icon: Heart, color: "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400" },
-    { name: t('tasbeehDhikr'), path: "/dhikr", icon: Flame, color: "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400" },
+    { name: t('qiblaFinder'), path: "/qibla", icon: KaabaIcon, color: "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400" },
+    { name: t('duasCollection'), path: "/duas", icon: DuaHandsIcon, color: "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400" },
+    { name: t('tasbeehDhikr'), path: "/dhikr", icon: DhikrTasbeehIcon, color: "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400" },
   ];
 
   return (
@@ -58,8 +62,8 @@ export const Home = () => {
                 to={item.path}
                 className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 hover:shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center gap-2.5 sm:gap-3.5 group min-h-[100px]"
               >
-                <div className={`p-2.5 sm:p-3 rounded-2xl ${item.color} group-hover:scale-105 transition-transform duration-300 shadow-sm`}>
-                  <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                <div className={`p-2.5 sm:p-3 rounded-2xl ${item.color} group-hover:scale-105 transition-transform duration-300 shadow-sm flex items-center justify-center`}>
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-brand-emerald-500 dark:group-hover:text-brand-emerald-400 transition-colors">
                   {item.name}
@@ -120,7 +124,7 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* 24/7 Live Qur'an Radio Section (Bottom of Home) */}
+      {/* 24/7 Live Qur'an Radio Section */}
       <div className="pt-2">
         <QuranRadioCard />
       </div>

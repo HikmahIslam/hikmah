@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Flame, RotateCcw, Minus } from 'lucide-react';
+import { RotateCcw, Minus } from 'lucide-react';
+import DhikrTasbeehIcon from '../components/DhikrTasbeehIcon';
 import { useSettings } from '../context/SettingsContext';
 
 const PRESET_DHIKR = [
@@ -55,7 +56,6 @@ export const Dhikr = () => {
     setCount(0);
   };
 
-  // SVG Progress Ring calculations
   const radius = 110;
   const strokeWidth = 10;
   const normalizedRadius = radius - strokeWidth * 2;
@@ -68,7 +68,7 @@ export const Dhikr = () => {
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-900 pb-5">
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-brand-emerald-500/10 dark:bg-brand-emerald-500/5 flex items-center justify-center text-brand-emerald-600 dark:text-brand-emerald-400 flex-shrink-0">
-          <Flame className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse-subtle" />
+          <DhikrTasbeehIcon className="w-6 h-6 sm:w-7 sm:h-7 animate-pulse-subtle" color="currentColor" />
         </div>
         <div>
           <h1 className="font-display font-bold text-xl sm:text-2xl tracking-wide text-slate-800 dark:text-white">{t('dhikrHeaderTitle')}</h1>
@@ -89,68 +89,69 @@ export const Dhikr = () => {
                 <button
                   key={idx}
                   onClick={() => handlePresetSelect(dhikr)}
-                  className={`w-full text-left rtl:text-right p-3.5 sm:p-4.5 rounded-2xl border transition-all duration-300 min-h-[60px] ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border text-left rtl:text-right transition-all duration-200 ${
                     isSelected
-                      ? 'border-brand-emerald-500 bg-brand-emerald-50/20 dark:bg-brand-emerald-950/20 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850'
+                      ? 'bg-brand-emerald-500 text-white border-brand-emerald-500 shadow-md shadow-brand-emerald-500/20'
+                      : 'bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400 min-w-0 truncate">
-                      {dhikr.transliteration}
-                    </span>
-                    <span className="arabic-text text-sm font-semibold flex-shrink-0" style={{ lineHeight: 1 }}>
-                      {dhikr.arabic}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 truncate">{dhikr.translation}</p>
+                  <p className="font-semibold text-xs sm:text-sm">{dhikr.transliteration}</p>
+                  <p className={`arabic-text text-sm sm:text-base mt-1 ${isSelected ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {dhikr.arabic}
+                  </p>
                 </button>
               );
             })}
           </div>
+
+          {/* Target Selector */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 space-y-2">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('target')}</label>
+            <div className="flex gap-2">
+              {[33, 100, 1000].map(tVal => (
+                <button
+                  key={tVal}
+                  onClick={() => setTarget(tVal)}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    target === tVal
+                      ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {tVal}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Counter Column */}
-        <div className="md:col-span-2 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-5 sm:p-8 shadow-sm gap-5 sm:gap-6">
+        {/* Counter Display */}
+        <div className="md:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-6 sm:p-10 flex flex-col items-center justify-center text-center space-y-6 sm:space-y-8 relative overflow-hidden shadow-xs">
           
-          {/* Target Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-900">
-            {[33, 99, 100].map(t => (
-              <button
-                key={t}
-                onClick={() => { setTarget(t); setCount(0); }}
-                className={`px-4 sm:px-5 py-2 rounded-xl text-xs font-semibold transition-all min-h-[36px] min-w-[44px] ${
-                  target === t ? 'bg-brand-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
-                }`}
-                aria-label={`Set target to ${t}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Active Dhikr Text */}
-          <div className="text-center space-y-1">
-            <h3 className="arabic-text text-2xl sm:text-3xl text-brand-emerald-600 dark:text-brand-emerald-400">
+          <div className="space-y-2 max-w-md">
+            <h2 className="arabic-text text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-white leading-tight">
               {selectedDhikr.arabic}
-            </h3>
-            <p className="text-sm font-bold text-slate-800 dark:text-white">{selectedDhikr.transliteration}</p>
-            <p className="text-xs text-slate-400 italic">{selectedDhikr.translation}</p>
+            </h2>
+            <p className="text-sm font-semibold text-brand-emerald-600 dark:text-brand-emerald-400">
+              {selectedDhikr.transliteration}
+            </p>
+            <p className="text-xs text-slate-400">
+              {selectedDhikr.translation}
+            </p>
           </div>
 
-          {/* Tap Counter Circle */}
-          <button
+          {/* Interactive Circle Tap Counter */}
+          <div 
             onClick={handleIncrement}
-            className="relative flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 shadow-inner hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-brand-emerald-500/30 cursor-pointer"
-            style={{ width: `${Math.min(svgSize, 240)}px`, height: `${Math.min(svgSize, 240)}px` }}
-            aria-label={`Increment count. Current count: ${count} of ${target}`}
+            className="relative cursor-pointer group flex items-center justify-center select-none"
+            role="button"
+            tabIndex={0}
+            aria-label="Increment Dhikr count"
           >
-            {/* SVG Progress Ring */}
             <svg
-              className="absolute transform -rotate-90"
-              width={Math.min(svgSize, 240)}
-              height={Math.min(svgSize, 240)}
-              viewBox={`0 0 ${svgSize} ${svgSize}`}
+              height={svgSize}
+              width={svgSize}
+              className="transform -rotate-90 transition-all duration-300 group-hover:scale-105"
             >
               <circle
                 stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'}
@@ -164,52 +165,55 @@ export const Dhikr = () => {
                 stroke="#10b981"
                 fill="transparent"
                 strokeWidth={strokeWidth}
-                strokeDasharray={`${circumference} ${circumference}`}
+                strokeDasharray={circumference + ' ' + circumference}
                 style={{ strokeDashoffset }}
                 strokeLinecap="round"
                 r={normalizedRadius}
                 cx={radius}
                 cy={radius}
-                className="transition-all duration-150"
+                className="transition-all duration-300 ease-out"
               />
             </svg>
-            <div className="flex flex-col items-center justify-center z-10 select-none">
-              <span className="font-display font-extrabold text-5xl sm:text-6xl text-slate-800 dark:text-white">
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-mono font-extrabold text-4xl sm:text-5xl text-slate-800 dark:text-white tracking-tighter">
                 {count}
               </span>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 mt-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                 / {target}
               </span>
             </div>
-          </button>
+          </div>
 
-          {/* Lower Controls */}
-          <div className="flex items-center justify-between w-full max-w-sm border-t border-slate-100 dark:border-slate-800/80 pt-5">
-            <div className="flex flex-col">
-              <span className="text-xs text-slate-450 dark:text-slate-500 font-medium">{t('totalCount')}</span>
-              <span className="font-mono text-xl font-extrabold text-brand-emerald-600 dark:text-brand-emerald-400">
-                {rounds}
-              </span>
+          {/* Bottom Stats & Controls */}
+          <div className="flex items-center justify-between w-full max-w-sm pt-2 border-t border-slate-100 dark:border-slate-800/60">
+            <div className="text-left rtl:text-right">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{t('totalCount')}</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{rounds} {t('target')}</span>
             </div>
+
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDecrement}
-                disabled={count === 0}
-                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors disabled:opacity-20 disabled:hover:bg-transparent min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Subtract 1 from count"
+                className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                title="Decrement count"
+                aria-label="Decrement count"
               >
                 <Minus className="w-4 h-4" />
               </button>
               <button
                 onClick={handleReset}
-                className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/15 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Reset counter and rounds"
+                className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 transition-colors"
+                title={t('reset')}
+                aria-label={t('reset')}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
   );

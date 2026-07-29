@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Headset, Compass } from 'lucide-react';
+import { Headset } from 'lucide-react';
 import HikmahIcon from './HikmahIcon';
+import QuranBookIcon from './QuranBookIcon';
+import KaabaIcon from './KaabaIcon';
 import { useSettings } from '../context/SettingsContext';
 
 export const Hero = () => {
@@ -24,7 +26,6 @@ export const Hero = () => {
               <stop offset="100%" stopColor="#10B981" />
             </linearGradient>
 
-            {/* Seamless Islamic Octagram Tile Pattern */}
             <pattern id="octagramPattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
               <rect x="10" y="10" width="40" height="40" rx="6" stroke="url(#heroGoldStroke)" strokeWidth="1" strokeOpacity="0.4" fill="none" />
               <rect x="10" y="10" width="40" height="40" rx="6" transform="rotate(45 30 30)" stroke="url(#heroGoldStroke)" strokeWidth="1" strokeOpacity="0.4" fill="none" />
@@ -32,10 +33,8 @@ export const Hero = () => {
             </pattern>
           </defs>
 
-          {/* Background Octagram Tile Canvas */}
           <rect width="300" height="300" fill="url(#octagramPattern)" />
 
-          {/* Dual Layered Mihrab Arch Vector Lines */}
           <path
             d="M 60 290 V 140 C 60 70, 150 25, 150 25 C 150 25, 240 70, 240 140 V 290 Z"
             stroke="url(#heroGoldStroke)"
@@ -51,7 +50,6 @@ export const Hero = () => {
             strokeOpacity="0.5"
           />
 
-          {/* Floating Decorative Radiant Islamic Star */}
           <circle cx="150" cy="90" r="18" fill="#F59E0B" fillOpacity="0.15" />
           <path
             d="M 150 72 L 154 84 L 166 88 L 154 92 L 150 104 L 146 92 L 134 88 L 146 84 Z"
@@ -82,7 +80,7 @@ export const Hero = () => {
             to="/quran"
             className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-bold hover:from-amber-300 hover:to-amber-500 transition-all hover:scale-[1.03] active:scale-[0.98] shadow-lg shadow-amber-500/25 text-sm min-h-[46px]"
           >
-            <BookOpen className="w-4.5 h-4.5 text-slate-950" />
+            <QuranBookIcon className="w-5 h-5 text-slate-950" />
             <span>{t('readQuran')}</span>
           </Link>
 
@@ -96,9 +94,9 @@ export const Hero = () => {
 
           <Link
             to="/qibla"
-            className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-slate-950/60 hover:bg-slate-900/80 text-emerald-200 border border-emerald-500/30 font-medium backdrop-blur-md transition-all text-xs sm:text-sm min-h-[46px]"
+            className="inline-flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl bg-slate-950/60 hover:bg-slate-900/80 text-emerald-200 border border-emerald-500/30 font-medium backdrop-blur-md transition-all text-xs sm:text-sm min-h-[46px]"
           >
-            <Compass className="w-4 h-4 text-amber-300" />
+            <KaabaIcon className="w-5 h-5" />
             <span>{t('qiblaFinder')}</span>
           </Link>
         </div>
