@@ -5,6 +5,7 @@ import DailyAyah from '../components/DailyAyah';
 import ContinueReading from '../components/ContinueReading';
 import SurahCard from '../components/SurahCard';
 import { BookOpen, Headphones, Compass, Heart, Flame } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const POPULAR_SURAHS = [
   { number: 1, name: "الفاتحة", englishName: "Al-Fatiha", englishNameTranslation: "The Opening", numberOfAyahs: 7, revelationType: "Meccan" },
@@ -16,12 +17,14 @@ const POPULAR_SURAHS = [
 ];
 
 export const Home = () => {
+  const { t } = useSettings();
+
   const quickAccessItems = [
-    { name: "Read Qur'an", path: "/quran", icon: BookOpen, color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" },
-    { name: "Listen Now", path: "/quran", icon: Headphones, color: "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400" },
-    { name: "Qibla Finder", path: "/qibla", icon: Compass, color: "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400" },
-    { name: "Duas Collection", path: "/duas", icon: Heart, color: "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400" },
-    { name: "Tasbeeh / Dhikr", path: "/dhikr", icon: Flame, color: "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400" },
+    { name: t('readQuran'), path: "/quran", icon: BookOpen, color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" },
+    { name: t('listenNow'), path: "/quran", icon: Headphones, color: "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400" },
+    { name: t('qiblaFinder'), path: "/qibla", icon: Compass, color: "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400" },
+    { name: t('duasCollection'), path: "/duas", icon: Heart, color: "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400" },
+    { name: t('tasbeehDhikr'), path: "/dhikr", icon: Flame, color: "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400" },
   ];
 
   return (
@@ -42,8 +45,8 @@ export const Home = () => {
 
       {/* Quick Access section */}
       <div className="space-y-3.5 sm:space-y-4">
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">
-          Quick Access
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1 rtl:pr-1 rtl:pl-0">
+          {t('quickAccess')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {quickAccessItems.map((item, idx) => {
@@ -69,14 +72,14 @@ export const Home = () => {
       {/* Popular Surahs section */}
       <div className="space-y-3.5 sm:space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900/60 pb-3 gap-2">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1 truncate">
-            Popular Surahs
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1 rtl:pr-1 rtl:pl-0 truncate">
+            {t('popularSurahs')}
           </h2>
           <Link
             to="/quran"
             className="text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400 hover:underline flex-shrink-0"
           >
-            View All 114 Surahs →
+            {t('viewAll114')}
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">

@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { DUAS_DATA } from '../data/duas';
 import { Heart, Copy, Check, Bookmark, BookmarkCheck, Languages } from 'lucide-react';
-
-const CATEGORIES = [
-  "All", "Morning Duas", "Evening Duas", "Protection",
-  "Forgiveness", "Guidance", "Family", "Travel", "Rizq", "Saved"
-];
+import { useSettings } from '../context/SettingsContext';
 
 export const Duas = () => {
+  const { t } = useSettings();
   const [activeCategory, setActiveCategory] = useState("All");
   const [bookmarkedDuas, setBookmarkedDuas] = useState(() => {
     const saved = localStorage.getItem('hikmah-bookmarked-duas');
@@ -30,6 +27,19 @@ export const Duas = () => {
     const saved = localStorage.getItem('hikmah-dua-show-malayalam');
     return saved !== null ? JSON.parse(saved) : true;
   });
+
+  const CATEGORIES = [
+    { key: "All", label: t('all') },
+    { key: "Morning Duas", label: t('morningDuas') },
+    { key: "Evening Duas", label: t('eveningDuas') },
+    { key: "Protection", label: t('protection') },
+    { key: "Forgiveness", label: t('forgiveness') },
+    { key: "Guidance", label: t('guidance') },
+    { key: "Family", label: t('family') },
+    { key: "Travel", label: t('travel') },
+    { key: "Rizq", label: t('rizq') },
+    { key: "Saved", label: t('saved') },
+  ];
 
   useEffect(() => {
     localStorage.setItem('hikmah-bookmarked-duas', JSON.stringify(bookmarkedDuas));
@@ -87,8 +97,8 @@ export const Duas = () => {
           <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
         </div>
         <div className="min-w-0">
-          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-wide text-slate-800 dark:text-white">Duas</h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">A collection of beautiful prayers and supplications from the Sunnah</p>
+          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-wide text-slate-800 dark:text-white">{t('duasHeaderTitle')}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">{t('duasHeaderSub')}</p>
         </div>
       </div>
 
@@ -96,7 +106,7 @@ export const Duas = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 shadow-xs">
         <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold text-xs sm:text-sm">
           <Languages className="w-4 h-4 text-brand-emerald-500" />
-          <span>Display Options:</span>
+          <span>{t('displayOptions')}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Transliteration Toggle */}
@@ -109,7 +119,7 @@ export const Duas = () => {
             }`}
           >
             {showTransliteration ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-current" />}
-            Transliteration
+            {t('transliteration')}
           </button>
 
           {/* English Toggle */}
@@ -122,7 +132,7 @@ export const Duas = () => {
             }`}
           >
             {showEnglish ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-current" />}
-            English
+            {t('english')}
           </button>
 
           {/* Malayalam Toggle */}
@@ -135,7 +145,7 @@ export const Duas = () => {
             }`}
           >
             {showMalayalam ? <Check className="w-3.5 h-3.5" /> : <div className="w-3.5 h-3.5 rounded-full border border-current" />}
-            മലയാളം
+            {t('malayalam')}
           </button>
         </div>
       </div>
@@ -143,18 +153,18 @@ export const Duas = () => {
       {/* Categories Bar — horizontally scrollable on mobile */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-0.5 px-0.5 scroll-smooth snap-x">
         {CATEGORIES.map(cat => {
-          const isActive = activeCategory === cat;
+          const isActive = activeCategory === cat.key;
           return (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
               className={`whitespace-nowrap flex-shrink-0 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-2xl text-xs font-semibold tracking-wide transition-all snap-start min-h-[40px] ${
                 isActive
                   ? 'bg-brand-emerald-500 text-white shadow-md shadow-brand-emerald-500/15'
                   : 'bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-850'
               }`}
             >
-              {cat}{cat === "Saved" && ` (${bookmarkedDuas.length})`}
+              {cat.label}{cat.key === "Saved" && ` (${bookmarkedDuas.length})`}
             </button>
           );
         })}
@@ -167,9 +177,9 @@ export const Duas = () => {
             <Bookmark className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">No saved Duas</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">{t('noSavedDuas')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Browse through Duas categories and save prayers that you'd like to read regularly.
+              {t('saveDuasHint')}
             </p>
           </div>
         </div>
@@ -190,13 +200,13 @@ export const Duas = () => {
                 <span className="text-[10px] uppercase font-bold tracking-widest text-brand-emerald-600 dark:text-brand-emerald-400">
                   {dua.category}
                 </span>
-                <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 text-right flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100 text-right rtl:text-left flex-1 min-w-0">
                   {dua.title}
                 </h3>
               </div>
 
               {/* Arabic */}
-              <div className="text-right">
+              <div className="text-right rtl:text-right">
                 <p className="arabic-text text-lg sm:text-xl md:text-2xl text-slate-900 dark:text-white leading-loose font-normal break-words" dir="rtl">
                   {dua.arabic}
                 </p>
@@ -204,7 +214,7 @@ export const Duas = () => {
 
               {/* Transliteration */}
               {showTransliteration && (
-                <div className="text-xs italic leading-relaxed text-slate-500 dark:text-slate-450 border-l-2 border-brand-gold-400/40 pl-3 break-words">
+                <div className="text-xs italic leading-relaxed text-slate-500 dark:text-slate-450 border-l-2 rtl:border-r-2 rtl:border-l-0 border-brand-gold-400/40 pl-3 rtl:pr-3 rtl:pl-0 break-words">
                   <p>{dua.transliteration}</p>
                 </div>
               )}
@@ -249,7 +259,7 @@ export const Duas = () => {
                   }`}
                   aria-label="Copy supplication"
                 >
-                  {isCopied ? <><Check className="w-4 h-4 text-brand-emerald-600" />Copied!</> : <><Copy className="w-4 h-4" />Copy</>}
+                  {isCopied ? <><Check className="w-4 h-4 text-brand-emerald-600" />{t('copied')}</> : <><Copy className="w-4 h-4" />{t('copy')}</>}
                 </button>
                 <button
                   onClick={() => toggleBookmarkDua(dua.id)}
@@ -260,7 +270,7 @@ export const Duas = () => {
                   }`}
                   aria-label="Save supplication"
                 >
-                  {isSaved ? <><BookmarkCheck className="w-4 h-4 fill-current text-brand-emerald-500" />Saved</> : <><Bookmark className="w-4 h-4" />Save</>}
+                  {isSaved ? <><BookmarkCheck className="w-4 h-4 fill-current text-brand-emerald-500" />{t('bookmarked')}</> : <><Bookmark className="w-4 h-4" />{t('save')}</>}
                 </button>
               </div>
             </div>

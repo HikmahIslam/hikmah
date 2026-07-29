@@ -6,10 +6,12 @@ import SurahCard from '../components/SurahCard';
 import SearchBar from '../components/SearchBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { BookOpen, Compass, AlertCircle, ChevronRight } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 // ─── JuzCard Component ────────────────────────────────────────────────────────
 const JuzCard = ({ juz }) => {
   const navigate = useNavigate();
+  const { t } = useSettings();
   return (
     <div
       onClick={() => navigate(`/quran/juz/${juz.id}`)}
@@ -32,7 +34,7 @@ const JuzCard = ({ juz }) => {
           {/* Juz title */}
           <div className="min-w-0">
             <div className="font-bold text-sm sm:text-base text-slate-855 dark:text-white group-hover:text-brand-emerald-600 dark:group-hover:text-brand-emerald-400 transition-colors truncate">
-              Juz {juz.id}
+              {t('juz')} {juz.id}
             </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 truncate">{juz.title}</div>
           </div>
@@ -74,7 +76,7 @@ const JuzCard = ({ juz }) => {
       {/* Read Juz link */}
       <div className="flex justify-end pt-1">
         <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-emerald-600 dark:text-brand-emerald-400 group-hover:gap-2 transition-all">
-          Read Juz <ChevronRight className="w-3.5 h-3.5" />
+          Read {t('juz')} <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
         </span>
       </div>
     </div>
@@ -83,6 +85,7 @@ const JuzCard = ({ juz }) => {
 
 // ─── Main Quran Page ──────────────────────────────────────────────────────────
 export const Quran = () => {
+  const { t } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'juz' ? 'juz' : 'surahs';
 
@@ -146,10 +149,7 @@ export const Quran = () => {
     );
   });
 
-  const searchPlaceholder =
-    activeTab === 'surahs'
-      ? 'Search Surah by name, number, or translation...'
-      : 'Search Juz by number or name...';
+  const searchPlaceholder = t('searchSurahPlaceholder');
 
   return (
     <div className="space-y-8">
@@ -159,10 +159,10 @@ export const Quran = () => {
           <BookOpen className="w-6 h-6 animate-pulse-subtle" />
         </div>
         <h1 className="font-display font-black text-3xl md:text-4xl tracking-tight text-slate-900 dark:text-white">
-          The Noble Qur'an
+          {t('quranHeaderTitle')}
         </h1>
         <p className="text-sm text-slate-505 dark:text-slate-400 max-w-lg mx-auto">
-          Read, listen, and search all 114 Surahs of the Holy Qur'an with modern translations and audio recitations.
+          {t('quranHeaderSub')}
         </p>
       </div>
 
@@ -185,7 +185,7 @@ export const Quran = () => {
               aria-selected={activeTab === 'surahs'}
               role="tab"
             >
-              Surahs
+              {t('allSurahs')}
             </button>
             <button
               id="tab-juz"
@@ -198,7 +198,7 @@ export const Quran = () => {
               aria-selected={activeTab === 'juz'}
               role="tab"
             >
-              Juz
+              {t('juz')}
             </button>
           </div>
         </div>
@@ -206,17 +206,21 @@ export const Quran = () => {
         {/* Revelation filter — only visible in Surahs tab */}
         {activeTab === 'surahs' && (
           <div className="flex justify-center gap-2 transition-all">
-            {['All', 'Meccan', 'Medinan'].map((filter) => (
+            {[
+              { key: 'All', label: t('all') },
+              { key: 'Meccan', label: t('meccan') },
+              { key: 'Medinan', label: t('medinan') },
+            ].map(({ key, label }) => (
               <button
-                key={filter}
-                onClick={() => setRevelationFilter(filter)}
+                key={key}
+                onClick={() => setRevelationFilter(key)}
                 className={`px-4.5 py-2 rounded-2xl text-xs font-semibold transition-all duration-300 ${
-                  revelationFilter === filter
+                  revelationFilter === key
                     ? 'bg-brand-emerald-500 text-white shadow-sm'
                     : 'bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/85 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850'
                 }`}
               >
-                {filter}
+                {label}
               </button>
             ))}
           </div>
@@ -241,7 +245,7 @@ export const Quran = () => {
               </button>
             </div>
           ) : filteredSurahs.length === 0 ? (
-            <div className="text-center p-12 text-slate-500 dark:text-slate-450">
+            <div className="text-center p-12 text-slate-500 dark:text-slate-455">
               <Compass className="w-12 h-12 mx-auto mb-3 text-slate-400 opacity-60" />
               <p className="text-sm font-medium">No Surahs found matching "{searchQuery}"</p>
               <p className="text-xs text-slate-400 mt-1">Try searching by surah numbers, translation names, or Arabic spellings.</p>

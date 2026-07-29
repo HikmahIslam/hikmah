@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Flame, RotateCcw, Minus } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const PRESET_DHIKR = [
   { arabic: "سُبْحَانَ ٱللَّٰهِ", transliteration: "Subhanallah", translation: "Glory be to Allah" },
@@ -12,6 +13,7 @@ const PRESET_DHIKR = [
 
 export const Dhikr = () => {
   const { theme } = useTheme();
+  const { t } = useSettings();
   const [selectedDhikr, setSelectedDhikr] = useState(PRESET_DHIKR[0]);
   const [count, setCount] = useState(() => {
     const saved = localStorage.getItem('hikmah-dhikr-count');
@@ -53,7 +55,7 @@ export const Dhikr = () => {
     setCount(0);
   };
 
-  // SVG Progress Ring calculations — responsive radius
+  // SVG Progress Ring calculations
   const radius = 110;
   const strokeWidth = 10;
   const normalizedRadius = radius - strokeWidth * 2;
@@ -69,17 +71,17 @@ export const Dhikr = () => {
           <Flame className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse-subtle" />
         </div>
         <div>
-          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-wide text-slate-800 dark:text-white">Tasbeeh</h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Keep track of your daily Dhikr recitations</p>
+          <h1 className="font-display font-bold text-xl sm:text-2xl tracking-wide text-slate-800 dark:text-white">{t('dhikrHeaderTitle')}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{t('dhikrHeaderSub')}</p>
         </div>
       </div>
 
-      {/* Main Grid — stacks on mobile, side-by-side on md+ */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8">
         
         {/* Preset Selection */}
         <div className="md:col-span-1 space-y-3 sm:space-y-4">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Select Supplication</h2>
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1 rtl:pr-1 rtl:pl-0">{t('dhikr')}</h2>
           <div className="flex flex-col gap-2 sm:gap-2.5">
             {PRESET_DHIKR.map((dhikr, idx) => {
               const isSelected = selectedDhikr.transliteration === dhikr.transliteration;
@@ -87,7 +89,7 @@ export const Dhikr = () => {
                 <button
                   key={idx}
                   onClick={() => handlePresetSelect(dhikr)}
-                  className={`w-full text-left p-3.5 sm:p-4.5 rounded-2xl border transition-all duration-300 min-h-[60px] ${
+                  className={`w-full text-left rtl:text-right p-3.5 sm:p-4.5 rounded-2xl border transition-all duration-300 min-h-[60px] ${
                     isSelected
                       ? 'border-brand-emerald-500 bg-brand-emerald-50/20 dark:bg-brand-emerald-950/20 shadow-sm'
                       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850'
@@ -141,7 +143,7 @@ export const Dhikr = () => {
             onClick={handleIncrement}
             className="relative flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 shadow-inner hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-brand-emerald-500/30 cursor-pointer"
             style={{ width: `${Math.min(svgSize, 240)}px`, height: `${Math.min(svgSize, 240)}px` }}
-            aria-label={`Increment Dhikr count. Current count: ${count} of ${target}`}
+            aria-label={`Increment count. Current count: ${count} of ${target}`}
           >
             {/* SVG Progress Ring */}
             <svg
@@ -176,7 +178,7 @@ export const Dhikr = () => {
                 {count}
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 mt-1">
-                of {target}
+                / {target}
               </span>
             </div>
           </button>
@@ -184,7 +186,7 @@ export const Dhikr = () => {
           {/* Lower Controls */}
           <div className="flex items-center justify-between w-full max-w-sm border-t border-slate-100 dark:border-slate-800/80 pt-5">
             <div className="flex flex-col">
-              <span className="text-xs text-slate-450 dark:text-slate-500 font-medium">Completed Rounds</span>
+              <span className="text-xs text-slate-450 dark:text-slate-500 font-medium">{t('totalCount')}</span>
               <span className="font-mono text-xl font-extrabold text-brand-emerald-600 dark:text-brand-emerald-400">
                 {rounds}
               </span>

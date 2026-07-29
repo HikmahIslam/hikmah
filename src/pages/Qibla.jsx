@@ -8,8 +8,10 @@ import QiblaInfo from '../components/qibla/QiblaInfo';
 import LocationPermission from '../components/qibla/LocationPermission';
 import CompassCalibration from '../components/qibla/CompassCalibration';
 import CompassAccuracy from '../components/qibla/CompassAccuracy';
+import { useSettings } from '../context/SettingsContext';
 
 export const Qibla = () => {
+  const { t } = useSettings();
   const { location, error: geoError, loading: geoLoading, permissionStatus, requestLocation } = useGeolocation();
   const { heading, isSupported: sensorSupported, needIOSPermission, permissionGranted: sensorPermissionGranted, accuracy, requestIOSPermission } = useDeviceOrientation();
 
@@ -33,13 +35,13 @@ export const Qibla = () => {
       <div className="text-center space-y-2 max-w-xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-emerald-50 dark:bg-brand-emerald-950/40 text-brand-emerald-600 dark:text-brand-emerald-400 text-xs font-bold uppercase tracking-wider border border-brand-emerald-200 dark:border-brand-emerald-800/60">
           <Compass className="w-4 h-4" />
-          <span>Kaaba Direction Finder</span>
+          <span>{t('qiblaFinder')}</span>
         </div>
         <h1 className="font-display font-extrabold text-2xl sm:text-3xl md:text-4xl text-slate-900 dark:text-white tracking-tight">
-          Find the Qibla
+          {t('qiblaHeaderTitle')}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          Discover the exact direction of the Holy Kaaba in Mecca from your current physical location.
+          {t('qiblaHeaderSub')}
         </p>
       </div>
 
@@ -52,7 +54,7 @@ export const Qibla = () => {
           {/* Compass Title */}
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Live Qibla Compass
+              {t('qiblaDirection')}
             </span>
             <CompassAccuracy accuracy={accuracy} isSupported={sensorSupported} deviceHeading={heading} />
           </div>
@@ -79,7 +81,7 @@ export const Qibla = () => {
 
           {/* Fallback Notice when device orientation sensors are unavailable */}
           {!sensorSupported && (
-            <div className="text-[11px] text-slate-500 bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 text-left space-y-1">
+            <div className="text-[11px] text-slate-500 bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 text-left rtl:text-right space-y-1">
               <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                 <span>Static Compass Mode</span>

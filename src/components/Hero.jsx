@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Headset, Compass } from 'lucide-react';
 import HikmahIcon from './HikmahIcon';
+import { useSettings } from '../context/SettingsContext';
 
 export const Hero = () => {
+  const { t } = useSettings();
+
   return (
     <div className="relative bg-gradient-to-br from-emerald-800 via-emerald-900 to-slate-950 text-white rounded-3xl p-6 sm:p-10 md:p-14 lg:p-16 overflow-hidden shadow-2xl shadow-emerald-900/40 border border-emerald-500/40">
       
@@ -62,18 +65,16 @@ export const Hero = () => {
         {/* Calligraphic Spiritual Badge */}
         <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-emerald-900/60 border border-amber-400/35 rounded-full text-xs font-semibold tracking-wider text-amber-300 backdrop-blur-md shadow-inner">
           <HikmahIcon className="w-4 h-4 text-amber-300" />
-          <span className="font-calligraphic tracking-widest uppercase text-[11px]">The Holy Qur'an Sanctuary</span>
+          <span className="font-calligraphic tracking-widest uppercase text-[11px]">Hikmah Sanctuary</span>
         </div>
         
         {/* Main Heading */}
         <h1 className="font-calligraphic font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight leading-[1.12]">
-          Find Divine Peace in <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 drop-shadow-md">
-            The Holy Qur'an
+          {t('heroTitle')} <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 drop-shadow-md text-2xl sm:text-3xl md:text-4xl block mt-2 font-normal">
+            {t('heroSubtitle')}
           </span>
         </h1>
-
-
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -82,7 +83,7 @@ export const Hero = () => {
             className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-bold hover:from-amber-300 hover:to-amber-500 transition-all hover:scale-[1.03] active:scale-[0.98] shadow-lg shadow-amber-500/25 text-sm min-h-[46px]"
           >
             <BookOpen className="w-4.5 h-4.5 text-slate-950" />
-            <span>Read Qur'an</span>
+            <span>{t('readQuran')}</span>
           </Link>
 
           <Link
@@ -90,7 +91,7 @@ export const Hero = () => {
             className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-900/40 hover:bg-emerald-800/60 text-white border border-emerald-400/30 font-semibold backdrop-blur-md transition-all hover:scale-[1.03] active:scale-[0.98] text-sm min-h-[46px]"
           >
             <Headset className="w-4.5 h-4.5 text-amber-300" />
-            <span>Listen Recitations</span>
+            <span>{t('listenNow')}</span>
           </Link>
 
           <Link
@@ -98,7 +99,7 @@ export const Hero = () => {
             className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-slate-950/60 hover:bg-slate-900/80 text-emerald-200 border border-emerald-500/30 font-medium backdrop-blur-md transition-all text-xs sm:text-sm min-h-[46px]"
           >
             <Compass className="w-4 h-4 text-amber-300" />
-            <span>Qibla Finder</span>
+            <span>{t('qiblaFinder')}</span>
           </Link>
         </div>
 

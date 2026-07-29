@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { Menu, X, BookOpen, Settings } from 'lucide-react';
+import { Menu, X, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import HikmahIcon from './HikmahIcon';
+import { useSettings } from '../context/SettingsContext';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useSettings();
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: "Qur'an", path: '/quran' },
-    { name: 'Duas', path: '/duas' },
-    { name: 'Dhikr', path: '/dhikr' },
-    { name: 'Qibla', path: '/qibla' },
+    { name: t('home'), path: '/' },
+    { name: t('quran'), path: '/quran' },
+    { name: t('duas'), path: '/duas' },
+    { name: t('dhikr'), path: '/dhikr' },
+    { name: t('qibla'), path: '/qibla' },
   ];
 
   const handleMobileClick = () => {
@@ -39,7 +41,7 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-4 rtl:space-x-reverse">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
@@ -65,7 +67,7 @@ export const Navbar = () => {
           </div>
 
           {/* Right Action Icons (Theme, Settings) */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2 rtl:space-x-reverse">
             <ThemeToggle />
             
             <NavLink
@@ -133,8 +135,8 @@ export const Navbar = () => {
               }`
             }
           >
-            <Settings className="w-5 h-5 mr-3 text-slate-400" />
-            Settings
+            <Settings className="w-5 h-5 mr-3 rtl:ml-3 rtl:mr-0 text-slate-400" />
+            {t('settings')}
           </NavLink>
         </div>
       )}

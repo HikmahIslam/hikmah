@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import HikmahIcon from './HikmahIcon';
+import { useSettings } from '../context/SettingsContext';
 
 export const Footer = () => {
+  const { t } = useSettings();
+
   return (
     <footer className="border-t border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950/40 text-slate-600 dark:text-slate-400">
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-12">
@@ -20,21 +23,21 @@ export const Footer = () => {
               </span>
             </Link>
             <p className="text-xs sm:text-sm leading-relaxed max-w-xs">
-              A peaceful, distraction-free digital companion for reading, listening, and studying the Holy Qur'an.
+              {t('footerText')}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
             <h3 className="text-xs sm:text-sm font-semibold tracking-wider text-slate-900 dark:text-slate-200 uppercase mb-3 sm:mb-4">
-              Explore
+              {t('quickAccess')}
             </h3>
             <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm">
               {[
-                { label: "Qur'an Index", path: "/quran" },
-                { label: "Duas Collection", path: "/duas" },
-                { label: "Dhikr & Tasbeeh", path: "/dhikr" },
-                { label: "Qibla Finder", path: "/qibla" },
+                { label: t('quran'), path: "/quran" },
+                { label: t('duas'), path: "/duas" },
+                { label: t('dhikr'), path: "/dhikr" },
+                { label: t('qibla'), path: "/qibla" },
               ].map(({ label, path }) => (
                 <li key={path}>
                   <Link to={path} className="hover:text-brand-emerald-500 transition-colors">
@@ -48,17 +51,17 @@ export const Footer = () => {
           {/* Spiritual Quote */}
           <div className="flex flex-col space-y-2 sm:space-y-3 sm:col-span-1 col-span-1 sm:col-auto">
             <h3 className="text-xs sm:text-sm font-semibold tracking-wider text-slate-900 dark:text-slate-200 uppercase">
-              Reflections
+              {t('dhikr')}
             </h3>
-            <blockquote className="border-l-2 border-brand-emerald-500 pl-3.5 sm:pl-4 py-1 italic text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              "Verily, in the remembrance of Allah do hearts find rest."
+            <blockquote className="border-l-2 rtl:border-r-2 rtl:border-l-0 border-brand-emerald-500 pl-3.5 sm:pl-4 rtl:pr-3.5 rtl:pl-0 py-1 italic text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ"
               <cite className="block not-italic font-medium text-slate-400 mt-1">— Surah Ar-Ra'd (13:28)</cite>
             </blockquote>
           </div>
         </div>
 
         <div className="mt-8 sm:mt-12 pt-5 sm:pt-6 border-t border-slate-100 dark:border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Hikmah. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Hikmah. {t('copyright')}</p>
           <p className="flex items-center gap-1">
             Made with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" /> for the Ummah.
           </p>

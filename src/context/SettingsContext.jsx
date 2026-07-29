@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { TRANSLATIONS } from '../utils/translations';
 
 const SettingsContext = createContext();
 
 const DEFAULT_SETTINGS = {
+  appLanguage: 'en', // 'en', 'ar', or 'ml'
   arabicFontSize: 32, // in px
   translationFontSize: 16, // in px
   defaultLanguage: 'en', // 'en' or 'ml'
@@ -26,6 +28,11 @@ export const SettingsProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('hikmah-settings', JSON.stringify(settings));
+
+    // Update document dir and lang attributes for full accessibility & RTL support
+    const lang = settings.appLanguage || 'en';
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   }, [settings]);
 
   const updateSetting = (key, value) => {
@@ -39,8 +46,15 @@ export const SettingsProvider = ({ children }) => {
     setSettings(DEFAULT_SETTINGS);
   };
 
+  // Translation helper
+  const t = (key) => {
+    const lang = settings.appLanguage || 'en';
+    const langDict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    return langDict[key] || TRANSLATIONS.en[key] || key;
+  };
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSetting, resetSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSetting, resetSettings, t }}>
       {children}
     </SettingsContext.Provider>
   );
