@@ -30,6 +30,15 @@ export const TRANSLATIONS = {
     searchAsmaulHusnaPlaceholder: "Search by number, name, English or Malayalam meaning...",
     bothTranslations: "Both",
 
+    // 24/7 Quran Radio
+    quranRadio: "Qur'an Radio 24/7",
+    liveStream: "LIVE STREAM",
+    stations: "Stations",
+    selectLiveStation: "Select Live Qur'an Station",
+    nowReciting: "Now Reciting Live",
+    connecting: "Connecting to Stream...",
+    tapToPlay: "Tap Play to Listen",
+
     // Quran Page
     quranHeaderTitle: "The Holy Qur'an",
     quranHeaderSub: "Explore all 114 Surahs with audio recitations and multi-language translations",
@@ -134,6 +143,15 @@ export const TRANSLATIONS = {
     searchAsmaulHusnaPlaceholder: "ابحث بالرقم أو الاسم أو المعنى...",
     bothTranslations: "كلاهما",
 
+    // 24/7 Quran Radio
+    quranRadio: "إذاعة القرآن الكريم ٢٤/٧",
+    liveStream: "بث مباشر",
+    stations: "الإذاعات",
+    selectLiveStation: "اختر إذاعة القرآن المباشرة",
+    nowReciting: "جاري التلاوة المباشرة الآن",
+    connecting: "جاري الاتصال بالبث المباشر...",
+    tapToPlay: "اضغط للاستماع",
+
     // Quran Page
     quranHeaderTitle: "القرآن الكريم",
     quranHeaderSub: "تصفح جميع السور الـ ١١٤ مع التلاوات الصوتية والترجمات",
@@ -237,6 +255,15 @@ export const TRANSLATIONS = {
     pause: "നിർത്തുക",
     searchAsmaulHusnaPlaceholder: "നമ്പർ, നാമം അല്ലെങ്കിൽ അർത്ഥം തിരയുക...",
     bothTranslations: "രണ്ടും",
+
+    // 24/7 Quran Radio
+    quranRadio: "ഖുർആൻ റേഡിയോ 24/7",
+    liveStream: "ലൈവ് റേഡിയോ",
+    stations: "ചാനലുകൾ",
+    selectLiveStation: "ഖുർആൻ ലൈവ് ചാനൽ തിരഞ്ഞെടുക്കുക",
+    nowReciting: "ഇപ്പോൾ തത്സമയം പാരരായണം ചെയ്യുന്നു",
+    connecting: "ബന്ധിപ്പിക്കുന്നു...",
+    tapToPlay: "കേൾക്കാൻ ക്ലിക്ക് ചെയ്യുക",
 
     // Quran Page
     quranHeaderTitle: "വിശുദ്ധ ഖുർആൻ",

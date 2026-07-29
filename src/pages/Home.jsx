@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import DailyAyah from '../components/DailyAyah';
 import ContinueReading from '../components/ContinueReading';
 import SurahCard from '../components/SurahCard';
+import QuranRadioCard from '../components/QuranRadioCard';
 import { BookOpen, Headphones, Compass, Heart, Flame, Sparkles, ChevronRight } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
@@ -117,6 +118,11 @@ export const Home = () => {
             <SurahCard key={surah.number} surah={surah} />
           ))}
         </div>
+      </div>
+
+      {/* 24/7 Live Qur'an Radio Section (Bottom of Home) */}
+      <div className="pt-2">
+        <QuranRadioCard />
       </div>
 
     </div>

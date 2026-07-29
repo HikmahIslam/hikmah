@@ -3,9 +3,6 @@ import { useSettings } from './SettingsContext';
 
 const AudioContext = createContext();
 
-// ─── Language-Specific Neural Audio Cache (Requirement #7 & #9) ──────────────
-// Keys: tts-v2-ml-{surahNumber}-{ayahNumber}-{textHash}
-//       tts-v2-eng-{surahNumber}-{ayahNumber}-{textHash}
 const ttsAudioCache = new Map();
 
 const simpleHash = (str) => {
@@ -18,7 +15,6 @@ const simpleHash = (str) => {
   return Math.abs(hash).toString(36);
 };
 
-// Maximum safe text length for query param
 const CHUNK_MAX = 280;
 
 const splitAtWordBoundary = (text, maxLen = CHUNK_MAX) => {
@@ -37,6 +33,9 @@ const splitAtWordBoundary = (text, maxLen = CHUNK_MAX) => {
 
 export const AudioProvider = ({ children }) => {
   const { settings } = useSettings();
+  const [audioType, setAudioType]               = useState(null); // 'quran', 'radio', 'track'
+  const [activeRadio, setActiveRadio]           = useState(null); // { name, url }
+  const [activeTrack, setActiveTrack]           = useState(null); // { title, subtitle, audioUrl }
   const [isPlaying, setIsPlaying]               = useState(false);
   const [currentSurah, setCurrentSurah]         = useState(null);
   const [currentAyahIndex, setCurrentAyahIndex] = useState(-1);
@@ -50,15 +49,18 @@ export const AudioProvider = ({ children }) => {
   const [ttsError, setTTSError]                 = useState(null);
 
   const audioRef           = useRef(null);
-  const activeBlobUrlsRef  = useRef(new Set()); // track Object URLs for cleanup
-  const chunkQueueRef      = useRef([]);        // remaining audio chunks for current ayah
+  const activeBlobUrlsRef  = useRef(new Set());
+  const chunkQueueRef      = useRef([]);
   const abortControllerRef = useRef(null);
+  const onTrackEndedRef    = useRef(null);
 
   // Closure-safe refs for event listeners
+  const audioTypeRef        = useRef(null);
   const currentSurahRef     = useRef(null);
   const currentAyahIndexRef = useRef(-1);
   const audioLanguageRef    = useRef('ar');
 
+  useEffect(() => { audioTypeRef.current        = audioType; },        [audioType]);
   useEffect(() => { currentSurahRef.current     = currentSurah; },     [currentSurah]);
   useEffect(() => { currentAyahIndexRef.current = currentAyahIndex; }, [currentAyahIndex]);
   useEffect(() => { audioLanguageRef.current    = audioLanguage; },    [audioLanguage]);
@@ -96,11 +98,31 @@ export const AudioProvider = ({ children }) => {
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onLoadedMeta = () => setDuration(audio.duration);
+    const onWaiting    = () => setIsTTSLoading(true);
+    const onPlaying    = () => {
+      setIsTTSLoading(false);
+      setIsPlaying(true);
+    };
 
     const onEnded = () => {
-      const lang = audioLanguageRef.current;
+      const type = audioTypeRef.current;
 
-      // If more chunks remain for current ayah, play next chunk
+      if (type === 'track') {
+        if (onTrackEndedRef.current) {
+          onTrackEndedRef.current();
+        } else {
+          setIsPlaying(false);
+        }
+        return;
+      }
+
+      if (type === 'radio') {
+        setIsPlaying(false);
+        return;
+      }
+
+      // Quran mode
+      const lang = audioLanguageRef.current;
       if ((lang === 'ml' || lang === 'en') && chunkQueueRef.current.length > 0) {
         const nextUrl = chunkQueueRef.current.shift();
         audio.src = nextUrl;
@@ -119,6 +141,8 @@ export const AudioProvider = ({ children }) => {
 
     audio.addEventListener('timeupdate',    onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMeta);
+    audio.addEventListener('waiting',       onWaiting);
+    audio.addEventListener('playing',       onPlaying);
     audio.addEventListener('ended',         onEnded);
     audio.addEventListener('error',         onError);
 
@@ -127,6 +151,8 @@ export const AudioProvider = ({ children }) => {
       cleanupActiveBlobUrls();
       audio.removeEventListener('timeupdate',    onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMeta);
+      audio.removeEventListener('waiting',       onWaiting);
+      audio.removeEventListener('playing',       onPlaying);
       audio.removeEventListener('ended',         onEnded);
       audio.removeEventListener('error',         onError);
     };
@@ -154,7 +180,7 @@ export const AudioProvider = ({ children }) => {
     }
   };
 
-  // ─── Fetch Neural Audio Chunk via /api/tts (Requirement #5 & #6) ──────────
+  // ─── Fetch Neural Audio Chunk via /api/tts ──────────────────────────────────
   const fetchNeuralAudioChunk = async (chunkText, lang, attempt = 1) => {
     const endpoint = `/api/tts?lang=${lang}&text=${encodeURIComponent(chunkText)}`;
 
@@ -162,7 +188,6 @@ export const AudioProvider = ({ children }) => {
       signal: abortControllerRef.current?.signal,
     });
 
-    // Handle Model Warm-Up (503 Service Unavailable)
     if (res.status === 503 && attempt <= 5) {
       const data = await res.json().catch(() => ({}));
       const estTime = data.estimated_time || 15;
@@ -172,7 +197,6 @@ export const AudioProvider = ({ children }) => {
         `Preparing ${langLabel} neural audio... Model is warming up (${Math.round(estTime)}s). Retrying (attempt ${attempt}/5)...`
       );
 
-      // Wait 5 seconds before retry
       await new Promise((r) => setTimeout(r, 5000));
       return fetchNeuralAudioChunk(chunkText, lang, attempt + 1);
     }
@@ -192,7 +216,7 @@ export const AudioProvider = ({ children }) => {
     return { objectUrl, contentType, engineHeader, blob };
   };
 
-  // ─── Play Neural Audio for Malayalam / English (Requirement #3, #4, #10) ────
+  // ─── Play Neural Audio for Malayalam / English ──────────────────────────────
   const speakNeuralTranslation = async (surah, ayah, lang) => {
     if (!audioRef.current) return;
 
@@ -218,15 +242,8 @@ export const AudioProvider = ({ children }) => {
     const langLabel  = lang === 'ml' ? 'Malayalam' : 'English';
     const modelLabel = lang === 'ml' ? 'facebook/mms-tts-mal' : 'facebook/mms-tts-eng';
 
-    // 1. Check Cache
     if (ttsAudioCache.has(cacheKey)) {
       const cached = ttsAudioCache.get(cacheKey);
-      console.info(`[TTS] Language: ${langLabel}`);
-      console.info(`[TTS] Model: ${modelLabel}`);
-      console.info(`[TTS] Source: Audio Cache (${cacheKey})`);
-      console.info(`[TTS] MIME type: ${cached.mimeType}`);
-      console.info(`[TTS] Playing neural audio from cache`);
-
       audioRef.current.src = cached.objectUrl;
       audioRef.current.load();
       audioRef.current.play()
@@ -235,7 +252,6 @@ export const AudioProvider = ({ children }) => {
       return;
     }
 
-    // 2. Fetch from Neural TTS API
     setIsTTSLoading(true);
     setTTSLoadingMessage(`Preparing ${langLabel} neural audio...`);
     abortControllerRef.current = new AbortController();
@@ -251,30 +267,18 @@ export const AudioProvider = ({ children }) => {
             : `Generating ${langLabel} neural audio...`
         );
 
-        const { objectUrl, contentType, engineHeader } = await fetchNeuralAudioChunk(chunks[i], lang);
-
-        if (i === 0) {
-          console.info(`[TTS] Language: ${langLabel}`);
-          console.info(`[TTS] Model: ${modelLabel}`);
-          console.info(`[TTS] Source: Hugging Face / ${engineHeader}`);
-          console.info(`[TTS] Audio generated successfully`);
-          console.info(`[TTS] MIME type: ${contentType}`);
-          console.info(`[TTS] Playing neural audio`);
-        }
-
+        const { objectUrl, contentType } = await fetchNeuralAudioChunk(chunks[i], lang);
         audioUrls.push(objectUrl);
       }
 
       setIsTTSLoading(false);
       setTTSLoadingMessage('');
 
-      // Store primary chunk in cache
       ttsAudioCache.set(cacheKey, {
         objectUrl: audioUrls[0],
         mimeType: 'audio/mpeg',
       });
 
-      // Queue remaining chunks if ayah was split
       chunkQueueRef.current = audioUrls.slice(1);
 
       audioRef.current.src = audioUrls[0];
@@ -292,24 +296,20 @@ export const AudioProvider = ({ children }) => {
 
       const errorMessage = `${langLabel} neural audio is currently unavailable. Please try again.`;
       setTTSError(errorMessage);
-
-      console.error(`[TTS Error]: ${err.message}`);
-      console.error(`[TTS] ${errorMessage}`);
     }
   };
 
-  // ─── Core play function ────────────────────────────────────────────────────
+  // ─── Play Quran Surah / Ayah ─────────────────────────────────────────────────
   const playAyahByIndex = (surah, index, lang = audioLanguageRef.current) => {
     if (!surah || index < 0 || index >= surah.ayahs.length) return;
 
     stopAllAudio();
+    setAudioType('quran');
 
     const ayah = surah.ayahs[index];
     currentSurahRef.current     = surah;
     currentAyahIndexRef.current = index;
 
-    // Target-scroll smoothly to translation or ayah element using block: 'nearest'
-    // Prevents jarring jumps to the top of the Arabic text when translation audio plays
     setTimeout(() => {
       let targetEl = null;
       if (lang === 'en' || lang === 'ml') {
@@ -323,13 +323,11 @@ export const AudioProvider = ({ children }) => {
       }
     }, 60);
 
-    // Malayalam & English → Pure Neural TTS Pipeline (ZERO SpeechSynthesis)
     if (lang === 'ml' || lang === 'en') {
       speakNeuralTranslation(surah, ayah, lang);
       return;
     }
 
-    // Arabic → Studio MP3 Recitation
     setTTSError(null);
     const reciter  = settings.defaultReciter || 'ar.alafasy';
     const audioUrl = ayah.audio ||
@@ -366,19 +364,68 @@ export const AudioProvider = ({ children }) => {
     playAyahByIndex(surah, index, lang);
   };
 
-  const pauseAudio = () => {
+  // ─── Play Live 24/7 Radio Stream ───────────────────────────────────────────
+  const playRadio = (station) => {
     stopAllAudio();
+    setAudioType('radio');
+    setActiveRadio(station);
+    setActiveTrack(null);
+    setCurrentSurah(null);
+    setCurrentAyahIndex(-1);
+    setIsTTSLoading(true);
+    setTTSLoadingMessage('Connecting to Live Stream...');
+
+    if (audioRef.current) {
+      audioRef.current.src = station.url;
+      audioRef.current.load();
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          setIsTTSLoading(false);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+          setIsTTSLoading(false);
+        });
+    }
+  };
+
+  // ─── Play Single Track / Asmaul Husna ──────────────────────────────────────
+  const playTrack = (trackData, onEndedCallback) => {
+    stopAllAudio();
+    setAudioType('track');
+    setActiveTrack(trackData);
+    setActiveRadio(null);
+    setCurrentSurah(null);
+    setCurrentAyahIndex(-1);
+    setIsTTSLoading(false);
+
+    if (audioRef.current) {
+      audioRef.current.src = trackData.audioUrl;
+      audioRef.current.playbackRate = trackData.playbackSpeed || 1.0;
+      audioRef.current.load();
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
+    }
+    onTrackEndedRef.current = onEndedCallback;
+  };
+
+  const pauseAudio = () => {
+    if (audioRef.current) audioRef.current.pause();
     setIsPlaying(false);
   };
 
   const resumeAudio = () => {
-    if (currentSurah && currentAyahIndex !== -1) {
-      playAyahByIndex(currentSurah, currentAyahIndex, audioLanguage);
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
     }
   };
 
   const seek = (time) => {
-    if (audioRef.current && audioLanguage === 'ar') {
+    if (audioRef.current && audioType === 'quran' && audioLanguage === 'ar') {
       audioRef.current.currentTime = time;
       setCurrentTime(time);
     }
@@ -408,6 +455,9 @@ export const AudioProvider = ({ children }) => {
     stopAllAudio();
     cleanupActiveBlobUrls();
     setIsPlaying(false);
+    setAudioType(null);
+    setActiveRadio(null);
+    setActiveTrack(null);
     setCurrentSurah(null);
     setCurrentAyahIndex(-1);
     currentSurahRef.current     = null;
@@ -422,6 +472,9 @@ export const AudioProvider = ({ children }) => {
 
   return (
     <AudioContext.Provider value={{
+      audioType,
+      activeRadio,
+      activeTrack,
       isPlaying,
       isTTSLoading,
       ttsLoadingMessage,
@@ -439,6 +492,8 @@ export const AudioProvider = ({ children }) => {
       setAudioLanguage,
       playSurah,
       playSingleAyah,
+      playRadio,
+      playTrack,
       pauseAudio,
       resumeAudio,
       seek,

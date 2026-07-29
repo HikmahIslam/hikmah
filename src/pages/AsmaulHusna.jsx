@@ -3,100 +3,70 @@ import { ASMAUL_HUSNA_DATA } from '../data/asmaulHusnaData';
 import SearchBar from '../components/SearchBar';
 import { Play, Pause, Volume2, Sparkles, Gauge } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import { useAudio } from '../context/AudioContext';
 
 export const AsmaulHusna = () => {
   const { t } = useSettings();
+  const {
+    audioType,
+    activeTrack,
+    isPlaying,
+    playTrack,
+    pauseAudio,
+    resumeAudio,
+    stopAudio,
+  } = useAudio();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [translationMode, setTranslationMode] = useState('both'); // 'both', 'en', 'ml', 'ar'
-  const [playbackSpeed, setPlaybackSpeed] = useState(1.25); // 1.0, 1.25, 1.5, 2.0
+  const [translationMode, setTranslationMode] = useState('both');
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.25);
   const [playingIndex, setPlayingIndex] = useState(null);
   const [isPlayingAll, setIsPlayingAll] = useState(false);
-  
-  const audioRef = useRef(null);
-  const nextAudioRef = useRef(null);
+
   const isPlayingAllRef = useRef(false);
   const itemRefs = useRef({});
 
-  useEffect(() => {
-    return () => {
-      isPlayingAllRef.current = false;
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      if (nextAudioRef.current) {
-        nextAudioRef.current = null;
-      }
-    };
-  }, []);
-
-  const preloadNextAudio = (currentIndex, speed) => {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex < ASMAUL_HUSNA_DATA.length) {
-      const nextItem = ASMAUL_HUSNA_DATA[nextIndex];
-      const audio = new Audio(nextItem.audioUrl);
-      audio.preload = 'auto';
-      audio.playbackRate = speed;
-      nextAudioRef.current = audio;
-    } else {
-      nextAudioRef.current = null;
-    }
-  };
+  const isAsmaulHusnaPlaying = audioType === 'track' && isPlaying;
 
   const playNameAtIndex = (index, playlistMode = false) => {
     if (index < 0 || index >= ASMAUL_HUSNA_DATA.length) {
       setPlayingIndex(null);
       setIsPlayingAll(false);
       isPlayingAllRef.current = false;
+      stopAudio();
       return;
     }
 
     setPlayingIndex(index);
     const targetItem = ASMAUL_HUSNA_DATA[index];
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-
-    let audio;
-    if (nextAudioRef.current && nextAudioRef.current.src.endsWith(targetItem.audioUrl.split('/').pop())) {
-      audio = nextAudioRef.current;
-    } else {
-      audio = new Audio(targetItem.audioUrl);
-    }
-
-    audio.playbackRate = playbackSpeed;
-    audioRef.current = audio;
-
-    // Preload the next audio clip instantly for seamless transition
-    preloadNextAudio(index, playbackSpeed);
-
-    // Scroll active item smoothly into view during playlist playback
     const cardEl = itemRefs.current[targetItem.number];
     if (cardEl && playlistMode) {
       cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    audio.play().catch(err => console.error("Audio play error:", err));
-
-    audio.onended = () => {
-      if (isPlayingAllRef.current && index + 1 < ASMAUL_HUSNA_DATA.length) {
-        playNameAtIndex(index + 1, true);
-      } else {
-        setPlayingIndex(null);
-        setIsPlayingAll(false);
-        isPlayingAllRef.current = false;
+    playTrack(
+      {
+        title: `${targetItem.name} (${targetItem.transliteration})`,
+        subtitle: targetItem.meaningEn,
+        audioUrl: targetItem.audioUrl,
+        playbackSpeed: playbackSpeed,
+      },
+      () => {
+        if (isPlayingAllRef.current && index + 1 < ASMAUL_HUSNA_DATA.length) {
+          playNameAtIndex(index + 1, true);
+        } else {
+          setPlayingIndex(null);
+          setIsPlayingAll(false);
+          isPlayingAllRef.current = false;
+        }
       }
-    };
+    );
   };
 
   const handleTogglePlayAll = () => {
     if (isPlayingAll) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      pauseAudio();
       setIsPlayingAll(false);
       isPlayingAllRef.current = false;
       setPlayingIndex(null);
@@ -108,11 +78,8 @@ export const AsmaulHusna = () => {
   };
 
   const handleSingleItemPlay = (index) => {
-    if (playingIndex === index && !isPlayingAll) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+    if (playingIndex === index && isAsmaulHusnaPlaying) {
+      pauseAudio();
       setPlayingIndex(null);
       isPlayingAllRef.current = false;
       setIsPlayingAll(false);
@@ -125,9 +92,6 @@ export const AsmaulHusna = () => {
 
   const handleSpeedChange = (speed) => {
     setPlaybackSpeed(speed);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speed;
-    }
   };
 
   const filteredNames = ASMAUL_HUSNA_DATA.filter((item) => {
@@ -168,12 +132,12 @@ export const AsmaulHusna = () => {
             <button
               onClick={handleTogglePlayAll}
               className={`px-6 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 shadow-lg min-h-[48px] ${
-                isPlayingAll
+                isPlayingAll && isAsmaulHusnaPlaying
                   ? 'bg-amber-400 text-slate-950 hover:bg-amber-300 shadow-amber-400/30 scale-105'
                   : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-emerald-600/30'
               }`}
             >
-              {isPlayingAll ? (
+              {isPlayingAll && isAsmaulHusnaPlaying ? (
                 <>
                   <Pause className="w-5 h-5 fill-current" />
                   <span>{t('pause')}</span>
@@ -249,7 +213,7 @@ export const AsmaulHusna = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {filteredNames.map((item) => {
           const index = item.number - 1;
-          const isItemPlaying = playingIndex === index;
+          const isItemPlaying = playingIndex === index && isAsmaulHusnaPlaying;
 
           return (
             <div
